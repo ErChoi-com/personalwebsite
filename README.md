@@ -8,7 +8,7 @@ A portfolio website featuring peer-to-peer gaming systems and procedural terrain
 
 ## Live Demo
 
-Visit the live portfolio: [https://erchoi-com.github.io/terminalcards](https://erchoi-com.github.io/terminalcards)
+Visit the live portfolio: [ernestchoi.com](ernestchoi.com)
 
 ## Table of Contents
 
@@ -98,6 +98,6 @@ ISC License - see [LICENSE](LICENSE) file for details.
 ## Contact
 
 **Ernest Choi**
-- Portfolio: [https://erchoi-com.github.io/terminalcards](https://erchoi-com.github.io/terminalcards)
+- Portfolio: [www.ernestchoi.com](www.ernestchoi.com)
 - GitHub: [@ErChoi-com](https://github.com/ErChoi-com)
 - Resume: [View on Overleaf](https://www.overleaf.com/read/njwfnpbccdzq#ce6706)

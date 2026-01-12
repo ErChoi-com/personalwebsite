@@ -3,7 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Terrain Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        
+        .slider-container {
+            margin: 15px 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input[type="range"] {
+            width: 300px;
+            height: 6px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+    </style>
 </head>
 <body>
   <!-- start of all the various imports -->
@@ -28,11 +70,22 @@
     <option value = "waves"> Waves </option>
     <option value = "circle"> Circle </option>
   </select>
-  <span>
-    <div contenteditable = "true" id = "parameterOne" data-placeholder = "Parameter 1"></div>
-    <div contenteditable = "true" id  = "parameterTwo" data-placeholder = "Parameter 2"></div>
-    <div contenteditable = "true" id = "parameterThree" data-placeholder = "Parameter 3"></div>
-  </span>
+  
+  <div class="slider-container">
+    <label for="parameterOne">Parameter 1: <span id="param1Value">0</span></label>
+    <input type="range" id="parameterOne" min="0" max="130" value="0">
+  </div>
+  
+  <div class="slider-container">
+    <label for="parameterTwo">Parameter 2: <span id="param2Value">0</span></label>
+    <input type="range" id="parameterTwo" min="0" max="130" value="0">
+  </div>
+  
+  <div class="slider-container">
+    <label for="parameterThree">Parameter 3: <span id="param3Value">0</span></label>
+    <input type="range" id="parameterThree" min="0" max="130" value="0">
+  </div>
+  
   <button id = "generate"> Generate </button>
   <button id="clear">Clear</button>
 
