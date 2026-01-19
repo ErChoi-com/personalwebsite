@@ -71,7 +71,7 @@ function input(text) {
         pokerInput(text);
     }
     
-    if (gameState = "othello") {
+    if (gameState === "othello") {
         processOthello(text);
     }
 

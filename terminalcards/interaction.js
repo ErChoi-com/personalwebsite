@@ -24,7 +24,12 @@ const terminalInput = document.getElementById("terminal-input");
 // HOST: Create room
 make.addEventListener("click", () => {
     if (!inRoom) {
-        peer = new Peer(roomCode.value);
+        try {
+            peer = new Peer(roomCode.value);
+        } catch (error) {
+            attachMessage(`Failed to create peer: ${error.message}`);
+            return;
+        }
 
         peer.on("open", () => {
             attachMessage("Room created. Waiting for peers...");
@@ -107,7 +112,12 @@ make.addEventListener("click", () => {
 // USER: Join room
 join.addEventListener("click", () => {
     if (!inRoom) {
-        peer = new Peer();
+        try {
+            peer = new Peer();
+        } catch (error) {
+            attachMessage(`Failed to create peer: ${error.message}`);
+            return;
+        }
 
         peer.on("open", () => {
             conn = peer.connect(roomCode.value); // connect to host
@@ -174,10 +184,6 @@ disconnect.addEventListener("click", () => {
     attachMessage("Disconnected.");
     inRoom = false;
 });
-
-computer.addEventListener("click", () => {
-    attachMessage("Bot added... NOT");
-})
 
 // Terminal message input
 terminalInput.addEventListener("keydown", async (e) => {
