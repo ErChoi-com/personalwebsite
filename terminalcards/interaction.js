@@ -69,6 +69,16 @@ make.addEventListener("click", () => {
                     console.log(`${data.text}`);
                     const user = usernames[peerId] || "Unknown";
                     attachMessage(data.text);
+                    
+                    const colonIndex = data.text.indexOf(': ');
+                    if (colonIndex !== -1) {
+                        const rawCommand = data.text.slice(colonIndex + 2);
+                        // Try to process as game command (host handles all game logic)
+                        if (typeof processGameCommand === 'function') {
+                            processGameCommand(peerId, rawCommand);
+                        }
+                    }
+                    
                     broadcast(peerId, {
                         type: "message",
                         text: data.text,
@@ -263,6 +273,15 @@ terminalInput.addEventListener("keydown", async (e) => {
     
 
         if (!text || (savedUser == null)) return;
+
+        // Check if this is a game command (host processes locally)
+        if (hostOrUser === 'host' && typeof gamelogic === 'function') {
+            const result = gamelogic(text);
+            if (result !== null) {
+                // It was a game command, don't send as chat message
+                return;
+            }
+        }
 
         const formattedText = `TerminalCards/${savedRoom}/${savedUser}: ${text}`;
         const msgObj = {

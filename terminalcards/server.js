@@ -1,15 +1,12 @@
 import express from "express";
 import dotenv from "dotenv";
-import fetch from "node-fetch";
+import pg from "pg";
 
 dotenv.config();
 
+const { Pool } = pg;
 const serverside = express();
 const PORT = 3000;
-const GITAPI = process.env.GITAPI;
-
-require('dotenv').config();
-const { Pool } = require('pg');
 
 const pool = new Pool({
   user: process.env.DB_USER,

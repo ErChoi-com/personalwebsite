@@ -1,31 +1,19 @@
 {
   "name": "prjctfldr",
   "version": "1.0.0",
-  "description": "This is designed to be just a website for hosting card game. It works by connecting through peer to peer networking, and i will intergrate some heavy math combos into it",
-  "main": "gamelogic.js",
+  "description": "Personal portfolio with TerminalCards (P2P messaging) and TerrainSim projects",
+  "main": "terminalcards/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node terminalcards/server.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ErChoi-com/terminalcards.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/ErChoi-com/terminalcards/issues"
-  },
-  "homepage": "https://github.com/ErChoi-com/terminalcards#readme",
-  "devDependencies": {
-    "@vitejs/plugin-react": "^5.0.0",
-    "vite": "^7.1.2"
-  },
   "dependencies": {
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "gsap": "^3.13.0",
-    "http-proxy-middleware": "^3.0.5",
-    "peerjs": "^1.5.5"
+    "pg": "^8.11.0"
   }
 }
