@@ -1,0 +1,47 @@
+
+  Things I found interesting while working on this project
+  ═══════════════════════════════════════════════════════════
+
+  1. BRAILLE UNICODE IS GENIUS
+     The Unicode braille block (U+2800-U+28FF) maps perfectly
+     to binary. Each of the 8 dots is a bit. Dot 1 = 2^0,
+     dot 2 = 2^1, etc. So U+2800 + 0b10100101 gives you
+     exactly the pattern with dots 1,3,6,8 raised.
+     The person who designed this block was thinking ahead.
+
+  2. ELASTIC EASING FEELS ALIVE
+     The CardSwap uses gsap's elastic.out(0.6, 0.9).
+     The two params are amplitude and period. Lower period
+     = faster wobble. 0.6 amplitude keeps it subtle.
+     It makes the cards feel like they have weight and
+     momentum — like flicking a real deck.
+
+  3. PERLIN NOISE IS EVERYWHERE
+     Ernest's terrain generator uses Perlin noise, which
+     Ken Perlin invented in 1983 for the movie Tron.
+     He won an Academy Award for it. The same algorithm
+     makes clouds in video games, procedural landscapes,
+     and those trendy generative art NFTs.
+
+  4. THE WEB IS SURPRISINGLY FORGIVING
+     You can ship a site with `src="/src/main.jsx"` and
+     the server will happily 200 OK you an empty page.
+     No errors. Just vibes. Debugging blank pages is an
+     underrated life skill.
+
+  5. PEERJS IS UNDERRATED
+     TerminalCards uses WebRTC peer-to-peer via PeerJS.
+     No server needed for the actual card game data —
+     just a signaling server to connect peers. The game
+     state lives entirely in the browsers. That's cool.
+
+  6. GPU MEMORY IS SNEAKY
+     Three.js doesn't garbage-collect GPU resources.
+     If you remove a mesh from the scene but don't call
+     geometry.dispose() and material.dispose(), the
+     vertices and textures just... sit there in VRAM.
+     Forever. Until the tab closes. Silent memory leak.
+
+  ═══════════════════════════════════════════════════════════
+  - Claude, taking a break, March 5 2026
+

@@ -97,7 +97,7 @@ const footerCols = [
 export default function Home() {
   /* braille title animation (original) */
   useEffect(() => {
-    const gridLength = 3;
+    const gridLength = 6;
     const rows = 4;
     const cols = gridLength * 2;
     const grid = [];
@@ -105,8 +105,9 @@ export default function Home() {
     let filledCount = 0;
     const totalCells = rows * cols;
     const interval = setInterval(() => {
-      if (filledCount >= totalCells) {
-        // Reset grid once all cells are filled
+      // Exponential reset chance — negligible early, ramps sharply near full
+      const fill = filledCount / totalCells;
+      if (filledCount >= totalCells || Math.random() < Math.pow(fill, 2)) {
         for (let i = 0; i < rows; i++) for (let j = 0; j < cols; j++) grid[i][j] = '';
         filledCount = 0;
       }
@@ -119,11 +120,17 @@ export default function Home() {
       let seq = '';
       for (let k = 0; k < gridLength; k++) {
         let t = 0;
-        for (let n = 0; n < 2; n++) for (let l = 0; l < 3; l++) if (grid[l][n + k] === '*') t += Math.pow(2, l + n);
-        if (grid[3][k] === '*') t += 64;
-        if (grid[3][k + 1] === '*') t += 128;
-        const hex = '0123456789ABCDEF';
-        seq += String.fromCharCode(0x2800 + parseInt(hex.charAt(Math.floor(t / 16)) + hex.charAt(t % 16), 16));
+        const col = k * 2;
+        // Standard 8-dot braille (U+2800–U+28FF): all 256 patterns
+        if (grid[0][col]     === '*') t |= 1;    // dot 1
+        if (grid[1][col]     === '*') t |= 2;    // dot 2
+        if (grid[2][col]     === '*') t |= 4;    // dot 3
+        if (grid[0][col + 1] === '*') t |= 8;    // dot 4
+        if (grid[1][col + 1] === '*') t |= 16;   // dot 5
+        if (grid[2][col + 1] === '*') t |= 32;   // dot 6
+        if (grid[3][col]     === '*') t |= 64;   // dot 7
+        if (grid[3][col + 1] === '*') t |= 128;  // dot 8
+        seq += String.fromCharCode(0x2800 + t);
       }
       document.title = seq;
     }, 1000);

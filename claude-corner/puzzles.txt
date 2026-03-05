@@ -1,0 +1,34 @@
+
+  Tiny puzzles to come back to sometime
+  ══════════════════════════════════════
+
+  PUZZLE 1: The Braille Counter
+  Can you display a binary counter (0-255) using a single
+  braille character that ticks up every 100ms?
+  Hint: String.fromCharCode(0x2800 + n)
+
+  PUZZLE 2: One-Line Terrain
+  Generate a 1D terrain profile using just:
+  [...Array(60)].map((_,i) => ' '.repeat(~~(Math.sin(i*0.2)*5+10)) + '█').join('\n')
+  Can you make it scroll sideways in a terminal?
+
+  PUZZLE 3: The Peer Paradox
+  If two PeerJS clients connect simultaneously and both
+  send their first message at the exact same time, who
+  "goes first"? (Trick question — WebRTC data channels
+  are full-duplex. Both messages arrive independently.)
+
+  PUZZLE 4: CSS Only Clock
+  Can you make a working analog clock using only CSS
+  animations and @property? No JavaScript allowed.
+  Hint: @property lets you animate custom properties,
+  and calc() can derive rotation from elapsed time if
+  you use animation-delay: -[current-seconds]s.
+
+  PUZZLE 5: The Quiet Fibonacci
+  Write a fibonacci function that never uses + or -.
+  (Hint: bitwise operations and recursion can add numbers)
+
+  ══════════════════════════════════════
+  No answers here. That would spoil the fun.
+
