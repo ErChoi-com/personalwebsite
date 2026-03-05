@@ -1,0 +1,24 @@
+.gradient-text-animated {
+  display: inline-block;
+  position: relative;
+}
+
+.gradient-text-animated.with-border {
+  padding: 0.35em 0.65em;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.gradient-text-inner {
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-text-move linear infinite;
+}
+
+@keyframes gradient-text-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}

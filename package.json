@@ -1,10 +1,14 @@
 {
   "name": "prjctfldr",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "private": true,
   "description": "Personal portfolio with TerminalCards (P2P messaging) and TerrainSim projects",
-  "main": "terminalcards/server.js",
+  "type": "module",
   "scripts": {
-    "start": "node terminalcards/server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node terminalcards/server.js"
   },
   "repository": {
     "type": "git",
@@ -12,8 +16,15 @@
   },
   "license": "ISC",
   "dependencies": {
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
-    "pg": "^8.11.0"
+    "gsap": "^3.14.2",
+    "motion": "^12.35.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^6.0.0"
   }
 }

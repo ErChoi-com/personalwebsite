@@ -1,0 +1,151 @@
+/* TerminalCards styles - dark terminal theme */
+.terminal-page {
+  margin: 0;
+  padding: 0;
+  font-family: 'Courier New', 'Times New Roman', Times, serif;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+}
+
+.terminal-page a.back-link {
+  color: #a855f7;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.03em;
+  transition: color 0.3s;
+}
+
+.terminal-page a.back-link:hover {
+  color: #c084fc;
+}
+
+.terminal-page p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: #8b949e;
+}
+
+.terminal-page input[type="text"] {
+  width: 280px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.terminal-page input[type="text"]:focus {
+  outline: none;
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+}
+
+.terminal-page .btn-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.terminal-page button {
+  padding: 0.5rem 1.2rem;
+  background-color: #21262d;
+  color: #c9d1d9;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.terminal-page button:hover {
+  background-color: #30363d;
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.terminal-page button.primary {
+  background-color: #238636;
+  border-color: #2ea043;
+  color: #fff;
+}
+
+.terminal-page button.primary:hover {
+  background-color: #2ea043;
+}
+
+.terminal-page button.danger {
+  background-color: #da3633;
+  border-color: #f85149;
+  color: #fff;
+}
+
+.terminal-page button.danger:hover {
+  background-color: #f85149;
+}
+
+.terminal-body {
+  font-family: 'Courier New', monospace;
+  width: 100%;
+  max-width: 800px;
+  background-color: #0d1117;
+  border: 1px solid #21262d;
+  border-radius: 8px;
+  padding: 1rem;
+  min-height: 300px;
+  max-height: 60vh;
+  overflow-y: auto;
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.terminal-body div {
+  padding: 2px 0;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
+.terminal-input-row {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 800px;
+  background-color: #161b22;
+  border: 1px solid #21262d;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 0.6rem 1rem;
+}
+
+.terminal-input-row .prompt {
+  color: #3fb950;
+  user-select: none;
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+  line-height: 1.4;
+}
+
+.terminal-input-row .terminal-input {
+  flex-grow: 1;
+  outline: none;
+  margin-left: 4px;
+  color: #3fb950;
+  min-height: 1em;
+  font-family: 'Courier New', monospace;
+  font-size: 1rem;
+  line-height: 1.4;
+}

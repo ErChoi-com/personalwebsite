@@ -1,0 +1,22 @@
+.shiny-text {
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: rgba(255, 255, 255, 0.7);
+  animation: shiny-text-shine var(--shine-speed, 5s) ease-in-out infinite;
+}
+
+.shiny-text.disabled {
+  animation: none;
+}
+
+@keyframes shiny-text-shine {
+  0% { background-position: 100%; }
+  100% { background-position: -100%; }
+}
