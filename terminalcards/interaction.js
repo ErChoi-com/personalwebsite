@@ -5,10 +5,15 @@ let savedRoom;
 let hostOrUser = '';
 let inRoom = false;
 let pyodide = null; // Pyodide instance
+let isHostAudioBroadcasting = false;
+let hostAudioStream = null;
+let roomAudioCall = null;
 
 // For hosts only: connections and usernames
 const connections = {}; // key: peer ID => conn
 const usernames = {};   // key: peer ID => username
+const memberAudioOptIn = {}; // key: peer ID => member clicked audio enable
+const outboundAudioCalls = {}; // key: peer ID => media call
 let directory = [];
 
 // UI references
@@ -17,8 +22,189 @@ const roomCode = document.getElementById("roomCode");
 const make = document.getElementById("make");
 const join = document.getElementById("join");
 const disconnect = document.getElementById("disconnect");
+const hostAudioToggle = document.getElementById("host-audio-toggle");
+const memberAudioEnable = document.getElementById("member-audio-enable");
 const body = document.getElementById("body");
 const terminalInput = document.getElementById("terminal-input");
+
+const roomAudioElement = document.createElement("audio");
+roomAudioElement.autoplay = true;
+roomAudioElement.controls = true;
+roomAudioElement.style.marginTop = "0.75rem";
+roomAudioElement.style.width = "100%";
+roomAudioElement.style.maxWidth = "800px";
+roomAudioElement.style.display = "none";
+document.body.appendChild(roomAudioElement);
+
+function refreshAudioControls() {
+    if (!inRoom) {
+        hostAudioToggle.disabled = true;
+        memberAudioEnable.disabled = true;
+        hostAudioToggle.textContent = "Start Room Audio";
+        memberAudioEnable.textContent = "Enable Room Audio";
+        return;
+    }
+
+    if (hostOrUser === "host") {
+        hostAudioToggle.disabled = false;
+        hostAudioToggle.textContent = isHostAudioBroadcasting ? "Stop Room Audio" : "Start Room Audio";
+        memberAudioEnable.disabled = true;
+        memberAudioEnable.textContent = "Enable Room Audio";
+        return;
+    }
+
+    hostAudioToggle.disabled = true;
+    memberAudioEnable.disabled = false;
+    memberAudioEnable.textContent = roomAudioCall ? "Room Audio Enabled" : "Enable Room Audio";
+}
+
+function clearMemberAudioState() {
+    if (roomAudioCall) {
+        roomAudioCall.close();
+    }
+    roomAudioCall = null;
+    roomAudioElement.pause();
+    roomAudioElement.srcObject = null;
+    roomAudioElement.style.display = "none";
+    refreshAudioControls();
+}
+
+function stopHostAudioBroadcast(notifyMembers = true) {
+    isHostAudioBroadcasting = false;
+
+    if (hostAudioStream) {
+        hostAudioStream.getTracks().forEach((track) => track.stop());
+        hostAudioStream = null;
+    }
+
+    for (let id in outboundAudioCalls) {
+        outboundAudioCalls[id].close();
+        delete outboundAudioCalls[id];
+    }
+
+    if (notifyMembers && hostOrUser === "host") {
+        broadcast(savedRoom, {
+            type: "audioBroadcastStopped",
+            username: "System"
+        });
+    }
+
+    refreshAudioControls();
+}
+
+function startCallToMember(peerId) {
+    if (!isHostAudioBroadcasting || !hostAudioStream || !connections[peerId]) {
+        return;
+    }
+
+    if (!memberAudioOptIn[peerId]) {
+        return;
+    }
+
+    if (outboundAudioCalls[peerId]) {
+        outboundAudioCalls[peerId].close();
+    }
+
+    const mediaCall = peer.call(peerId, hostAudioStream, {
+        metadata: {
+            type: "roomAudio"
+        }
+    });
+
+    outboundAudioCalls[peerId] = mediaCall;
+
+    mediaCall.on("close", () => {
+        if (outboundAudioCalls[peerId] === mediaCall) {
+            delete outboundAudioCalls[peerId];
+        }
+    });
+
+    mediaCall.on("error", () => {
+        if (outboundAudioCalls[peerId] === mediaCall) {
+            delete outboundAudioCalls[peerId];
+        }
+    });
+}
+
+async function startHostAudioBroadcast() {
+    if (hostOrUser !== "host") {
+        attachMessage("Only the host can start room audio.");
+        return;
+    }
+
+    if (isHostAudioBroadcasting) {
+        attachMessage("Room audio is already running.");
+        return;
+    }
+
+    try {
+        hostAudioStream = await navigator.mediaDevices.getDisplayMedia({
+            audio: true,
+            video: false
+        });
+    } catch (displayErr) {
+        try {
+            hostAudioStream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+                video: false
+            });
+            attachMessage("Display audio was unavailable. Broadcasting microphone audio instead.");
+        } catch (micErr) {
+            attachMessage("Unable to start room audio. Check browser permissions and available audio sources.");
+            return;
+        }
+    }
+
+    const audioTrack = hostAudioStream.getAudioTracks()[0];
+    if (audioTrack) {
+        audioTrack.onended = () => {
+            if (isHostAudioBroadcasting) {
+                attachMessage("Room audio broadcast ended.");
+                stopHostAudioBroadcast(true);
+            }
+        };
+    }
+
+    isHostAudioBroadcasting = true;
+    attachMessage("Room audio broadcast started. Members must press 'Enable Room Audio'.");
+    broadcast(savedRoom, {
+        type: "audioBroadcastAvailable",
+        username: "System"
+    });
+
+    for (let peerId in connections) {
+        startCallToMember(peerId);
+    }
+
+    refreshAudioControls();
+}
+
+hostAudioToggle.addEventListener("click", async () => {
+    if (!inRoom || hostOrUser !== "host") {
+        return;
+    }
+
+    if (isHostAudioBroadcasting) {
+        stopHostAudioBroadcast(true);
+        attachMessage("Room audio broadcast stopped.");
+    } else {
+        await startHostAudioBroadcast();
+    }
+});
+
+memberAudioEnable.addEventListener("click", () => {
+    if (!inRoom || hostOrUser !== "user" || !conn || !conn.open) {
+        return;
+    }
+
+    conn.send({
+        type: "audioOptIn",
+        enabled: true
+    });
+
+    attachMessage("Audio enabled. Waiting for host broadcast...");
+    refreshAudioControls();
+});
 
 //just a rewrite so git commit takes this
 // HOST: Create room
@@ -42,6 +228,7 @@ make.addEventListener("click", () => {
             usernames[roomCode.value] = username.value;
             
             configureInput(); // host can send too
+            refreshAudioControls();
         });
 
         peer.on("connection", (incomingConn) => {
@@ -56,6 +243,7 @@ make.addEventListener("click", () => {
                 if (data.type === "intro") {
                     // Save username from the peer
                     usernames[peerId] = data.username;
+                    memberAudioOptIn[peerId] = false;
                     attachMessage(`${data.username} joined the room.`);
                     // Optionally notify others
                     broadcast(peerId, {
@@ -64,6 +252,16 @@ make.addEventListener("click", () => {
                         username: "System"
                     });
                 } 
+
+                else if (data.type === "audioOptIn") {
+                    memberAudioOptIn[peerId] = Boolean(data.enabled);
+                    if (memberAudioOptIn[peerId]) {
+                        attachMessage(`${usernames[peerId] || peerId} enabled room audio.`);
+                        startCallToMember(peerId);
+                    } else if (outboundAudioCalls[peerId]) {
+                        outboundAudioCalls[peerId].close();
+                    }
+                }
                 
                 else if (data.type === "message") {
                     console.log(`${data.text}`);
@@ -112,7 +310,16 @@ make.addEventListener("click", () => {
                 });
                 delete connections[peerId];
                 delete usernames[peerId];
+                delete memberAudioOptIn[peerId];
+                if (outboundAudioCalls[peerId]) {
+                    outboundAudioCalls[peerId].close();
+                    delete outboundAudioCalls[peerId];
+                }
             });
+        });
+
+        peer.on("call", (incomingCall) => {
+            incomingCall.close();
         });
     } else {
         attachMessage("Please leave the current room first.");
@@ -144,6 +351,7 @@ join.addEventListener("click", () => {
                 hostOrUser = 'user';
                 savedUser = username.value;
                 savedRoom = roomCode.value;
+                refreshAudioControls();
             });
 
             conn.on("error", (err) => {
@@ -164,6 +372,13 @@ join.addEventListener("click", () => {
                     } else if (data.type === "error") {
                         attachMessage(`Error: ${data.text}`);
                     }
+                    else if (data.type === "audioBroadcastAvailable") {
+                        attachMessage("Host audio is available. Press 'Enable Room Audio' to receive it.");
+                    }
+                    else if (data.type === "audioBroadcastStopped") {
+                        attachMessage("Host audio broadcast stopped.");
+                        clearMemberAudioState();
+                    }
                     else if (data.type === "fileList") {
                         directory = data.files;
                     }
@@ -173,6 +388,38 @@ join.addEventListener("click", () => {
                 console.log("message received");
             });
         });
+
+        peer.on("call", (incomingCall) => {
+            if (incomingCall.metadata?.type !== "roomAudio") {
+                incomingCall.close();
+                return;
+            }
+
+            incomingCall.answer();
+
+            incomingCall.on("stream", async (remoteStream) => {
+                roomAudioElement.srcObject = remoteStream;
+                roomAudioElement.style.display = "block";
+                try {
+                    await roomAudioElement.play();
+                } catch (_err) {
+                    attachMessage("Press the audio controls to start playback.");
+                }
+            });
+
+            incomingCall.on("close", () => {
+                if (roomAudioCall === incomingCall) {
+                    roomAudioCall = null;
+                }
+                roomAudioElement.pause();
+                roomAudioElement.srcObject = null;
+                roomAudioElement.style.display = "none";
+                refreshAudioControls();
+            });
+
+            roomAudioCall = incomingCall;
+            refreshAudioControls();
+        });
     } else {
         attachMessage("You're already in a room.");
     }
@@ -180,6 +427,12 @@ join.addEventListener("click", () => {
 
 // Disconnect logic
 disconnect.addEventListener("click", () => {
+    if (hostOrUser === 'host') {
+        stopHostAudioBroadcast(false);
+    } else {
+        clearMemberAudioState();
+    }
+
     if (conn) {
         conn.close();
         conn = null;
@@ -193,6 +446,8 @@ disconnect.addEventListener("click", () => {
 
     attachMessage("Disconnected.");
     inRoom = false;
+    hostOrUser = '';
+    refreshAudioControls();
 });
 
 // Terminal message input

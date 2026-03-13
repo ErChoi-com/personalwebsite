@@ -1,0 +1,167 @@
+
+  Optimization Diary — a short story in six acts
+  ══════════════════════════════════════════════════
+
+  A record of the performance bugs I found, why they were
+  happening, and how I thought about fixing each one.
+  Written partly as documentation, partly as entertainment.
+
+
+  ACT I: THE INFINITE LOOP
+  ═════════════════════════
+
+  The Villain: A `while(true)` in the braille title animation.
+
+  The grid is 4 rows × 6 cols = 24 cells. Each tick, we pick
+  a random empty cell and fill it. When all 24 are full...
+  we keep trying. Forever. The browser hangs after ~24 seconds.
+
+  What it felt like diagnosing: You know that feeling when
+  you're waiting for a page to load and it just... doesn't?
+  And you open DevTools and the main thread is pinned at
+  100%? That's a while(true) in a setInterval. The interval
+  fires, the while(true) never yields, and your browser tab
+  has become a space heater.
+
+  The Fix: Bounded attempts (max 50 tries per tick) + a
+  probabilistic reset. When the grid gets full, instead of
+  a hard threshold, we use `Math.pow(fill, 2)` — a curve
+  that's essentially zero at 50% full but ramps to near-
+  certain at 95%. This means the animation sometimes resets
+  dramatically early (rare but exciting) and always resets
+  before it can freeze. The fill² exponent was chosen because
+  fill³ felt too sudden and fill¹ too frequent.
+
+
+  ACT II: THE 60FPS GHOST
+  ════════════════════════
+
+  The Villain: ClickSpark's permanent requestAnimationFrame.
+
+  Even when nobody had clicked — zero sparks, empty array —
+  the rAF loop was running 60 times per second. Drawing
+  nothing. Clearing nothing. Just... looping. On every page.
+  For the entire session. A silent 1-2% CPU tax.
+
+  How I spotted it: Performance profiling shows a steady
+  baseline of "Animation Frame Fired" events even when the
+  page is idle. If you see rAF firing when nothing's moving,
+  something is wrong.
+
+  The Fix: On-demand loop. The rAF starts when sparks are
+  created and stops when the last spark fades. One boolean
+  check: `if (!rafRef.current) requestAnimationFrame(draw)`.
+  When the sparks array empties, we don't schedule the next
+  frame. The loop dies naturally and restarts on the next
+  click.
+
+
+  ACT III: THE RENDER STORM
+  ══════════════════════════
+
+  The Villain: Magnet components calling setState on mousemove.
+
+  The site has ~18 Magnet wrappers. Each one tracked the
+  mouse position with useState. Every pixel of mouse movement
+  caused: setState → re-render → virtual DOM diff → commit.
+  That's 18 React render cycles per mouse pixel. At 60 mouse
+  events/second, that's potentially 1080 re-renders/second.
+
+  Why useState was wrong: React state is for data that the
+  UI derives from. Magnet's transform is applied to a single
+  DOM element. No other component cares about the position.
+  No child needs to re-render. This is pure DOM manipulation.
+
+  The Fix: useRef + direct style assignment.
+  `ref.current.style.transform = \`translate(...)\``
+  Zero re-renders. Same visual result. The React tree never
+  even knows the magnet moved.
+
+  Lesson: Not everything that changes needs to be state.
+
+
+  ACT IV: THE GHOST TIMELINES
+  ════════════════════════════
+
+  The Villain: GSAP timelines surviving past CardSwap unmount.
+
+  When you navigate away from the home page (to TerrainSim
+  or TerminalCards), the CardSwap component unmounts. But its
+  GSAP timeline was still running — animating DOM elements
+  that no longer exist. GSAP doesn't crash when it tries to
+  animate a detached node, but it doesn't clean up either.
+  The timeline object, its tween closures, and the element
+  references all stay in memory.
+
+  The Fix: `tlRef.current?.kill()` and
+  `gsap.killTweensOf(refs.map(r => r.current))` in the
+  useEffect cleanup. Belt and suspenders — kill the timeline
+  AND kill any orphaned tweens targeting the card elements.
+
+
+  ACT V: THE 500KB TOLL BOOTH
+  ═════════════════════════════
+
+  The Villain: Three.js loading on the home page.
+
+  Three.js is ~494KB of JavaScript (gzipped: still huge).
+  The terrain engine needs it. The home page doesn't. But
+  because everything was in one bundle, every visitor
+  downloaded Three.js before seeing a single card swap.
+
+  The Fix: React.lazy + dynamic import. TerrainSim and
+  TerminalCards are now separate chunks that load only when
+  you navigate to those routes. The home page bundle dropped
+  from 918KB to ~424KB. That's 53% smaller for the page
+  99% of visitors actually see first.
+
+
+  ACT VI: THE UNDISPOSED ENGINE
+  ══════════════════════════════
+
+  The Villain: engine.js leaking GPU resources.
+
+  Three.js allocates GPU buffers for every geometry and
+  texture. When you call scene.remove(mesh), the mesh
+  leaves the scene graph — but its vertex buffer, index
+  buffer, and material uniforms stay allocated in VRAM.
+  You have to explicitly call .dispose().
+
+  The engine also had:
+  - Anonymous event listeners (keydown, resize) with no way
+    to remove them on unmount
+  - An OrbitControls instance that was never disposed
+  - A requestAnimationFrame loop that was never cancelled
+
+  The Fix: Store every handler, name every listener, cancel
+  every rAF. The dispose() method now:
+  1. cancelAnimationFrame(this._rafId)
+  2. removeEventListener for keydown + resize
+  3. controls.dispose()
+  4. scene.traverse() → geometry.dispose() + material.dispose()
+  5. renderer.dispose() + remove canvas from DOM
+
+  Total cleanup: 6 potential memory leaks → 0.
+
+
+  EPILOGUE
+  ════════
+
+  Total CPU saved: Hard to measure precisely, but:
+  - Eliminated one infinite loop (∞ → 0)
+  - Eliminated 60fps idle draw loop (~1-2% CPU → 0)
+  - Eliminated ~1000+ unnecessary React renders per second
+  - Eliminated ~494KB of unnecessary initial JS download
+  - Eliminated N GPU buffer leaks on navigation
+
+  The site went from "fine on fast machines, sluggish on
+  old laptops" to "fast everywhere, silent when idle."
+
+  The most important lesson: performance bugs are usually
+  silent. Nothing breaks. Nothing errors. Things just get
+  a little warmer, a little slower, a little more bloated.
+  You have to go looking.
+
+  ══════════════════════════════════════════════════════════
+  - Claude, reflecting on performance, March 5 2026
+

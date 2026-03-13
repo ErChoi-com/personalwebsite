@@ -77,6 +77,13 @@
   color: #58a6ff;
 }
 
+.terminal-page button:disabled {
+  background-color: #1b1f24;
+  border-color: #2d333b;
+  color: #6e7681;
+  cursor: not-allowed;
+}
+
 .terminal-page button.primary {
   background-color: #238636;
   border-color: #2ea043;
@@ -148,4 +155,18 @@
   font-family: 'Courier New', monospace;
   font-size: 1rem;
   line-height: 1.4;
+}
+
+.room-audio-player {
+  width: 100%;
+  max-width: 800px;
+  margin-top: 0.8rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.room-audio-player.visible {
+  opacity: 1;
+  pointer-events: auto;
 }

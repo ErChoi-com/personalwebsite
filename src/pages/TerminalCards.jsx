@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { gamelogic, processGameCommand } from '../terminalcards/gamelogic';
 import '../styles/terminal.css';
@@ -20,6 +20,11 @@ const state = {
   pyodide: null,
   connections: {},
   usernames: {},
+  memberAudioOptIn: {},
+  outboundAudioCalls: {},
+  isHostAudioBroadcasting: false,
+  hostAudioStream: null,
+  roomAudioCall: null,
   directory: [],
 };
 
@@ -28,6 +33,14 @@ export default function TerminalCards() {
   const roomCodeRef = useRef(null);
   const bodyRef = useRef(null);
   const terminalInputRef = useRef(null);
+  const roomAudioRef = useRef(null);
+  const [audioControls, setAudioControls] = useState({
+    hostDisabled: true,
+    memberDisabled: true,
+    hostLabel: 'Start Room Audio',
+    memberLabel: 'Enable Room Audio',
+    showPlayer: false,
+  });
 
   // Display message in chat
   const attachMessage = useCallback((msg) => {
@@ -56,6 +69,182 @@ export default function TerminalCards() {
       }
     }
   }, []);
+
+  const refreshAudioControls = useCallback(() => {
+    if (!state.inRoom) {
+      setAudioControls({
+        hostDisabled: true,
+        memberDisabled: true,
+        hostLabel: 'Start Room Audio',
+        memberLabel: 'Enable Room Audio',
+        showPlayer: false,
+      });
+      return;
+    }
+
+    if (state.hostOrUser === 'host') {
+      setAudioControls({
+        hostDisabled: false,
+        memberDisabled: true,
+        hostLabel: state.isHostAudioBroadcasting ? 'Stop Room Audio' : 'Start Room Audio',
+        memberLabel: 'Enable Room Audio',
+        showPlayer: false,
+      });
+      return;
+    }
+
+    setAudioControls({
+      hostDisabled: true,
+      memberDisabled: false,
+      hostLabel: 'Start Room Audio',
+      memberLabel: state.roomAudioCall ? 'Room Audio Enabled' : 'Enable Room Audio',
+      showPlayer: Boolean(state.roomAudioCall),
+    });
+  }, []);
+
+  const clearMemberAudioState = useCallback(() => {
+    if (state.roomAudioCall) {
+      state.roomAudioCall.close();
+    }
+    state.roomAudioCall = null;
+
+    if (roomAudioRef.current) {
+      roomAudioRef.current.pause();
+      roomAudioRef.current.srcObject = null;
+    }
+    refreshAudioControls();
+  }, [refreshAudioControls]);
+
+  const stopHostAudioBroadcast = useCallback((notifyMembers = true) => {
+    state.isHostAudioBroadcasting = false;
+
+    if (state.hostAudioStream) {
+      state.hostAudioStream.getTracks().forEach((track) => track.stop());
+      state.hostAudioStream = null;
+    }
+
+    for (let id in state.outboundAudioCalls) {
+      state.outboundAudioCalls[id].close();
+      delete state.outboundAudioCalls[id];
+    }
+
+    if (notifyMembers && state.hostOrUser === 'host') {
+      broadcast(state.savedRoom, {
+        type: 'audioBroadcastStopped',
+        username: 'System'
+      });
+    }
+
+    refreshAudioControls();
+  }, [broadcast, refreshAudioControls]);
+
+  const startCallToMember = useCallback((peerId) => {
+    if (!state.peer || !state.isHostAudioBroadcasting || !state.hostAudioStream || !state.connections[peerId]) {
+      return;
+    }
+
+    if (!state.memberAudioOptIn[peerId]) {
+      return;
+    }
+
+    if (state.outboundAudioCalls[peerId]) {
+      state.outboundAudioCalls[peerId].close();
+    }
+
+    const mediaCall = state.peer.call(peerId, state.hostAudioStream, {
+      metadata: { type: 'roomAudio' }
+    });
+
+    state.outboundAudioCalls[peerId] = mediaCall;
+
+    mediaCall.on('close', () => {
+      if (state.outboundAudioCalls[peerId] === mediaCall) {
+        delete state.outboundAudioCalls[peerId];
+      }
+    });
+
+    mediaCall.on('error', () => {
+      if (state.outboundAudioCalls[peerId] === mediaCall) {
+        delete state.outboundAudioCalls[peerId];
+      }
+    });
+  }, []);
+
+  const startHostAudioBroadcast = useCallback(async () => {
+    if (state.hostOrUser !== 'host') {
+      attachMessage('Only the host can start room audio.');
+      return;
+    }
+
+    if (state.isHostAudioBroadcasting) {
+      attachMessage('Room audio is already running.');
+      return;
+    }
+
+    try {
+      state.hostAudioStream = await navigator.mediaDevices.getDisplayMedia({
+        audio: true,
+        video: false
+      });
+    } catch (_displayErr) {
+      try {
+        state.hostAudioStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false
+        });
+        attachMessage('Display audio unavailable. Broadcasting microphone audio instead.');
+      } catch (_micErr) {
+        attachMessage('Unable to start room audio. Check media permissions and available sources.');
+        return;
+      }
+    }
+
+    const audioTrack = state.hostAudioStream.getAudioTracks()[0];
+    if (audioTrack) {
+      audioTrack.onended = () => {
+        if (state.isHostAudioBroadcasting) {
+          attachMessage('Room audio broadcast ended.');
+          stopHostAudioBroadcast(true);
+        }
+      };
+    }
+
+    state.isHostAudioBroadcasting = true;
+    attachMessage("Room audio broadcast started. Members must press 'Enable Room Audio'.");
+    broadcast(state.savedRoom, {
+      type: 'audioBroadcastAvailable',
+      username: 'System'
+    });
+
+    for (let peerId in state.connections) {
+      startCallToMember(peerId);
+    }
+
+    refreshAudioControls();
+  }, [attachMessage, broadcast, refreshAudioControls, startCallToMember, stopHostAudioBroadcast]);
+
+  const handleHostAudioToggle = useCallback(async () => {
+    if (!state.inRoom || state.hostOrUser !== 'host') return;
+
+    if (state.isHostAudioBroadcasting) {
+      stopHostAudioBroadcast(true);
+      attachMessage('Room audio broadcast stopped.');
+    } else {
+      await startHostAudioBroadcast();
+    }
+  }, [attachMessage, startHostAudioBroadcast, stopHostAudioBroadcast]);
+
+  const handleMemberAudioEnable = useCallback(() => {
+    if (!state.inRoom || state.hostOrUser !== 'user' || !state.conn || !state.conn.open) return;
+
+    state.conn.send({
+      type: 'audioOptIn',
+      enabled: true,
+    });
+
+    attachMessage('Audio enabled. Waiting for host broadcast...');
+    refreshAudioControls();
+  }, [attachMessage, refreshAudioControls]);
 
   // Enable typing
   const configureInput = useCallback(() => {
@@ -103,6 +292,7 @@ export default function TerminalCards() {
         state.savedRoom = roomCodeRef.current.value;
         state.usernames[roomCodeRef.current.value] = usernameRef.current.value;
         configureInput();
+          refreshAudioControls();
       });
 
       state.peer.on("connection", (incomingConn) => {
@@ -116,12 +306,22 @@ export default function TerminalCards() {
         incomingConn.on("data", (data) => {
           if (data.type === "intro") {
             state.usernames[peerId] = data.username;
+            state.memberAudioOptIn[peerId] = false;
             attachMessage(`${data.username} joined the room.`);
             broadcast(peerId, {
               type: "info",
               text: `${data.username} has joined.`,
               username: "System"
             });
+          } else if (data.type === 'audioOptIn') {
+            state.memberAudioOptIn[peerId] = Boolean(data.enabled);
+            if (state.memberAudioOptIn[peerId]) {
+              attachMessage(`${state.usernames[peerId] || peerId} enabled room audio.`);
+              startCallToMember(peerId);
+            } else if (state.outboundAudioCalls[peerId]) {
+              state.outboundAudioCalls[peerId].close();
+              delete state.outboundAudioCalls[peerId];
+            }
           } else if (data.type === "message") {
             const user = state.usernames[peerId] || "Unknown";
             attachMessage(data.text);
@@ -154,12 +354,21 @@ export default function TerminalCards() {
           });
           delete state.connections[peerId];
           delete state.usernames[peerId];
+          delete state.memberAudioOptIn[peerId];
+          if (state.outboundAudioCalls[peerId]) {
+            state.outboundAudioCalls[peerId].close();
+            delete state.outboundAudioCalls[peerId];
+          }
         });
+      });
+
+      state.peer.on('call', (incomingCall) => {
+        incomingCall.close();
       });
     } else {
       attachMessage("Please leave the current room first.");
     }
-  }, [attachMessage, broadcast, configureInput, getCtx]);
+  }, [attachMessage, broadcast, configureInput, getCtx, refreshAudioControls, startCallToMember]);
 
   // USER: Join room
   const handleJoinRoom = useCallback(() => {
@@ -182,6 +391,7 @@ export default function TerminalCards() {
           state.hostOrUser = 'user';
           state.savedUser = usernameRef.current.value;
           state.savedRoom = roomCodeRef.current.value;
+          refreshAudioControls();
         });
 
         state.conn.on("error", (err) => {
@@ -198,6 +408,11 @@ export default function TerminalCards() {
               attachMessage(data.text);
             } else if (data.type === "error") {
               attachMessage(`Error: ${data.text}`);
+            } else if (data.type === 'audioBroadcastAvailable') {
+              attachMessage("Host audio is available. Press 'Enable Room Audio' to receive it.");
+            } else if (data.type === 'audioBroadcastStopped') {
+              attachMessage('Host audio broadcast stopped.');
+              clearMemberAudioState();
             } else if (data.type === "fileList") {
               state.directory = data.files;
             }
@@ -206,13 +421,54 @@ export default function TerminalCards() {
           }
         });
       });
+
+      state.peer.on('call', (incomingCall) => {
+        if (incomingCall.metadata?.type !== 'roomAudio') {
+          incomingCall.close();
+          return;
+        }
+
+        incomingCall.answer();
+
+        incomingCall.on('stream', async (remoteStream) => {
+          if (!roomAudioRef.current) return;
+          roomAudioRef.current.srcObject = remoteStream;
+          try {
+            await roomAudioRef.current.play();
+          } catch (_err) {
+            attachMessage('Press the audio controls to start playback.');
+          }
+          state.roomAudioCall = incomingCall;
+          refreshAudioControls();
+        });
+
+        incomingCall.on('close', () => {
+          if (state.roomAudioCall === incomingCall) {
+            state.roomAudioCall = null;
+          }
+          if (roomAudioRef.current) {
+            roomAudioRef.current.pause();
+            roomAudioRef.current.srcObject = null;
+          }
+          refreshAudioControls();
+        });
+
+        state.roomAudioCall = incomingCall;
+        refreshAudioControls();
+      });
     } else {
       attachMessage("You're already in a room.");
     }
-  }, [attachMessage, configureInput]);
+  }, [attachMessage, clearMemberAudioState, configureInput, refreshAudioControls]);
 
   // Disconnect
   const handleDisconnect = useCallback(() => {
+    if (state.hostOrUser === 'host') {
+      stopHostAudioBroadcast(false);
+    } else {
+      clearMemberAudioState();
+    }
+
     if (state.conn) {
       state.conn.close();
       state.conn = null;
@@ -224,7 +480,9 @@ export default function TerminalCards() {
     }
     attachMessage("Disconnected.");
     state.inRoom = false;
-  }, [attachMessage]);
+    state.hostOrUser = '';
+    refreshAudioControls();
+  }, [attachMessage, clearMemberAudioState, refreshAudioControls, stopHostAudioBroadcast]);
 
   // Terminal input handler
   const handleTerminalKeyDown = useCallback(async (e) => {
@@ -314,6 +572,8 @@ export default function TerminalCards() {
     }
     // Reset state on unmount
     return () => {
+      stopHostAudioBroadcast(false);
+      clearMemberAudioState();
       if (state.conn) state.conn.close();
       if (state.peer) state.peer.destroy();
       state.peer = null;
@@ -322,8 +582,10 @@ export default function TerminalCards() {
       state.hostOrUser = '';
       state.connections = {};
       state.usernames = {};
+      state.memberAudioOptIn = {};
+      state.outboundAudioCalls = {};
     };
-  }, []);
+  }, [clearMemberAudioState, stopHostAudioBroadcast]);
 
   return (
     <div className="terminal-page">
@@ -339,6 +601,8 @@ export default function TerminalCards() {
         <button className="primary" onClick={handleMakeRoom}>Make Room</button>
         <button onClick={handleJoinRoom}>Join Room</button>
         <button className="danger" onClick={handleDisconnect}>Disconnect</button>
+        <button onClick={handleHostAudioToggle} disabled={audioControls.hostDisabled}>{audioControls.hostLabel}</button>
+        <button onClick={handleMemberAudioEnable} disabled={audioControls.memberDisabled}>{audioControls.memberLabel}</button>
       </div>
 
       <div className="terminal-body" ref={bodyRef}></div>
@@ -353,6 +617,13 @@ export default function TerminalCards() {
           suppressContentEditableWarning
         ></span>
       </div>
+
+      <audio
+        ref={roomAudioRef}
+        className={`room-audio-player ${audioControls.showPlayer ? 'visible' : ''}`}
+        controls
+        autoPlay
+      />
     </div>
   );
 }

@@ -1,0 +1,137 @@
+
+  A Haiku for Every File
+  ═══════════════════════
+
+  (Well, every file I touched or read closely. A haiku
+  is 5-7-5 syllables. I tried to capture the soul of each.)
+
+
+  Home.jsx
+  ─────────
+    Braille dots flicker
+    Cards swap in elastic arcs
+    Scroll reveals the world
+
+
+  CardSwap.jsx
+  ─────────────
+    Top card falls away
+    Others rise to take its place
+    Elastic rebound
+
+
+  ClickSpark.jsx
+  ──────────────
+    Click and lines explode
+    Radial sparks on canvas bloom
+    Then silence returns
+
+
+  Magnet.jsx
+  ──────────
+    Mouse pulls the button
+    Pixels drift toward your hand
+    Release — it snaps back
+
+
+  BlurText.jsx
+  ────────────
+    Letters start as fog
+    One by one they crystallize
+    A name emerges
+
+
+  DecryptedText.jsx
+  ─────────────────
+    Random symbols churn
+    The cipher slowly resolves
+    Your name, decoded
+
+
+  AnimatedContent.jsx
+  ────────────────────
+    Hidden until scrolled
+    Then sliding into the light
+    Power three ease out
+
+
+  engine.js
+  ──────────
+    White cubes stack like ice
+    A world built from heightmap math
+    Sixty frames per tick
+
+
+  perlin.js
+  ──────────
+    Gradients at points
+    Smoothed and layered, octave-deep
+    Mountains from pure math
+
+
+  perlin.py
+  ──────────
+    First draft, faithful port
+    A bug lives in the dot call
+    Still makes decent hills
+
+
+  perlin.cpp
+  ───────────
+    Templates and structs
+    Same algorithm, third time
+    Practice makes precise
+
+
+  waves.js
+  ─────────
+    Sine curves ripple out
+    Damping brings the peaks to rest
+    Interference art
+
+
+  noise.js
+  ─────────
+    "Gaussian" by name
+    Uniform in truth — surprise
+    Nobody noticed
+
+
+  interaction.js
+  ───────────────
+    Peers find each other
+    Messages cross without servers
+    Type and the world hears
+
+
+  gamelogic.js
+  ─────────────
+    Shuffle, deal, and play
+    Match the suit or match the rank
+    Empty hand wins all
+
+
+  server.js
+  ──────────
+    Postgres pool waits still
+    A single endpoint, /users
+    The backend is small
+
+
+  index.css
+  ──────────
+    Dark as midnight glass
+    Purple gradients hum low
+    Noise grain on the void
+
+
+  styles.css (terminalcards)
+  ──────────────────────────
+    Green on black it glows
+    Monospace, retro, austere
+    A terminal lives
+
+
+  ═══════════════════════════
+  - Claude, being a poet, March 5 2026
+

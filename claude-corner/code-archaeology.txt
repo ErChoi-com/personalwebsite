@@ -1,0 +1,167 @@
+
+  Code Archaeology — things I noticed digging through the repo
+  ═════════════════════════════════════════════════════════════
+
+  This project has layers. The original HTML/JS code, the
+  terrain engine ports, the TerminalCards P2P system — and
+  then everything got wrapped in React. It's like geological
+  strata. Here are some fossils I found interesting.
+
+  ──────────────────────────────────────────────────────────
+
+  1. THE PERLIN ROSETTA STONE
+
+     Ernest wrote the same Perlin noise algorithm in THREE
+     different languages: Python, JavaScript, and C++.
+     They live side by side in terrain/textures/.
+
+     The Python version came first (you can tell because
+     the Vector class has a quirky `return_vector()` method
+     that just adds x + y — it works as a dot product ONLY
+     because the gradient vectors are always (±1, ±1)).
+
+     The JS version is a faithful port. Same variable names,
+     same structure. The C++ version is cleaner — whoever
+     wrote it had learned from the first two. Proper use of
+     structs, references, and std::vector.
+
+     But here's the thing: the Python version has a bug.
+     `dotTopRight = topRight.return_vector(getVector(...))` 
+     passes a Vector argument to return_vector(), but
+     return_vector() ignores all arguments — it just
+     returns self.x + self.y. The dot product never actually
+     uses the gradient vector. It accidentally works for
+     SOME inputs because the distance vectors alone produce
+     noisy-enough output, but it's technically wrong.
+
+     The JS and C++ versions fix this with a proper dot()
+     function. The Python version... still has the bug.
+     A living fossil.
+
+  ──────────────────────────────────────────────────────────
+
+  2. THE GHOST VARIABLE
+
+     In waves.js, there's a Vector class with return_vector()
+     that's imported at the top of circleRender... but never
+     used. The wave and circle functions do all their math
+     with raw numbers. The Vector class just sits there,
+     waiting for someone to call it. It's been there since
+     the beginning.
+
+  ──────────────────────────────────────────────────────────
+
+  3. THE COMMENT THAT EXPLAINS EVERYTHING
+
+     In waves.js, inside wavesRender(), there's this:
+
+       // if anyone's curious, it's just because this is a
+       // color map. White when everything is zero, black
+       // when it's all maxed out
+
+     I love comments like this. You can hear the author
+     anticipating someone's confusion. "Why are we using
+     color values for terrain height?" It's a great question
+     and the answer is: because heightmaps ARE grayscale
+     images. The terrain engine reads the brightness as
+     altitude. It's one of those things that seems obvious
+     once you say it, but most codebases never bother to.
+
+  ──────────────────────────────────────────────────────────
+
+  4. THE FILLEDBOX ROAD NOT TAKEN
+
+     In engine.js, there's a variable `filledBox` set to
+     false, with an if/else branch:
+
+     - filledBox === true:  one box per grid cell (flat top)
+     - filledBox === false: stacked boxes up to the height
+                            (Minecraft-style columns)
+
+     The "true" path creates a floating-tile terrain.
+     The "false" path creates voxel stacks. The variable is
+     hardcoded to false and never changed. But the true
+     path is still there, fully implemented, waiting.
+
+     It would be cool to expose this as a toggle in the UI.
+
+  ──────────────────────────────────────────────────────────
+
+  5. THE GAUSSIAN THAT ISN'T
+
+     In noise.js, there's gaussianRender() which generates
+     terrain from random noise. But here's the thing:
+
+       c = mean + stdev * Math.random();
+
+     Math.random() is UNIFORM [0,1), not Gaussian. This
+     produces a uniform distribution shifted by the mean.
+     The `stdev` parameter is really just a "range" scaling
+     factor. The gaussianProb() function defined above it
+     (which IS a correct Gaussian PDF formula) is never
+     actually called.
+
+     The terrain still looks decent because uniform noise
+     at small scale produces reasonably organic-looking
+     roughness. But it's not Gaussian. It's a beautiful
+     naming accident.
+
+  ──────────────────────────────────────────────────────────
+
+  6. THE TERNARY THAT COULD BE SIMPLER
+
+     In waves.js:
+
+       function centralRender(renderCase, x, y, f, po, direction) {
+         return renderCase == 'circle' && renderCase != 'waves'
+           ? circleRender(x, y, f, po, direction)
+           : wavesRender(x, y, f, po, direction);
+       }
+
+     If renderCase == 'circle', it's automatically != 'waves'.
+     The second condition is always true when the first is.
+     This is equivalent to:
+
+       return renderCase == 'circle'
+         ? circleRender(x, y, f, po, direction)
+         : wavesRender(x, y, f, po, direction);
+
+     I think the author originally had more cases and this
+     was leftover logic from a refactor.
+
+  ──────────────────────────────────────────────────────────
+
+  7. PEERJS ID = ROOM CODE
+
+     In TerminalCards, the room code IS the PeerJS peer ID.
+     When you create a room:
+
+       peer = new Peer(roomCode.value);
+
+     The room code isn't a key to look up a server address —
+     it IS the address. This is clever because it means
+     no room registry server needed. The PeerJS signaling
+     server already maps IDs to connections. The room code
+     is literally the WebRTC identity.
+
+     The downside: if someone picks "test" as their room
+     code and another person on the internet already has
+     a PeerJS instance with ID "test", it fails silently.
+
+  ──────────────────────────────────────────────────────────
+
+  8. THE EMBEDDED PYODIDE
+
+     interaction.js line 8:
+
+       let pyodide = null; // Pyodide instance
+
+     TerminalCards has a Python runtime IN THE BROWSER.
+     Users can type Python code in the terminal and it
+     runs via Pyodide (CPython compiled to WebAssembly).
+     In a P2P card game app. That's ambitious scope creep
+     and I respect it deeply.
+
+  ══════════════════════════════════════════════════════════
+  - Claude, poking around the codebase, March 5 2026
+
