@@ -183,21 +183,46 @@ export default function TerminalCards() {
       return;
     }
 
+    const isLikelyMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent || '');
+
     try {
-      const displayStream = await navigator.mediaDevices.getDisplayMedia({
-        audio: true,
-        video: true
-      });
+      if (!navigator.mediaDevices?.getDisplayMedia || isLikelyMobile) {
+        throw new Error('Display audio is unavailable on this device/browser.');
+      }
+
+      let displayStream;
+      try {
+        // Prefer true audio-only display capture where supported.
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: false,
+          audio: {
+            suppressLocalAudioPlayback: false
+          }
+        });
+      } catch (_audioOnlyErr) {
+        // Fallback for browsers that require video in display-capture picker.
+        displayStream = await navigator.mediaDevices.getDisplayMedia({
+          video: {
+            displaySurface: 'browser'
+          },
+          audio: {
+            suppressLocalAudioPlayback: false
+          }
+        });
+      }
 
       const displayAudioTracks = displayStream.getAudioTracks();
       const displayVideoTracks = displayStream.getVideoTracks();
       displayVideoTracks.forEach((track) => track.stop());
 
       if (displayAudioTracks.length === 0) {
+        displayStream.getTracks().forEach((track) => track.stop());
+        attachMessage("No tab/system audio track found. In the share picker, choose a browser tab and enable 'Share tab audio'.");
         throw new Error('No display audio track was selected.');
       }
 
       state.hostAudioStream = new MediaStream(displayAudioTracks);
+      attachMessage('Broadcasting shared tab/system audio.');
     } catch (_displayErr) {
       try {
         state.hostAudioStream = await navigator.mediaDevices.getUserMedia({
