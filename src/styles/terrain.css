@@ -161,3 +161,93 @@
 .terrain-canvas-container canvas {
   display: block;
 }
+
+@media (max-width: 1024px) {
+  .terrain-controls {
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .slider-group {
+    width: 100%;
+  }
+
+  .terrain-fps {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .terrain-controls {
+    align-items: flex-start;
+  }
+
+  .terrain-controls h1 {
+    width: 100%;
+    font-size: 1.1rem;
+  }
+
+  .terrain-controls select {
+    width: 100%;
+    font-size: 16px;
+    min-height: 40px;
+  }
+
+  .slider-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .slider-container {
+    width: 100%;
+  }
+
+  .slider-container input[type="range"] {
+    width: 100%;
+  }
+
+  .terrain-controls .btn-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .terrain-controls button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  .terrain-fps {
+    width: 100%;
+    text-align: right;
+  }
+
+  .terrain-canvas-container {
+    min-height: 58vh;
+  }
+}
+
+@media (max-width: 420px) {
+  .terrain-controls {
+    padding: 0.85rem 0.75rem;
+    gap: 0.8rem;
+  }
+
+  .terrain-controls a.back-link {
+    font-size: 0.8rem;
+  }
+
+  .terrain-controls .btn-group {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .terrain-fps {
+    text-align: left;
+  }
+
+  .terrain-canvas-container {
+    min-height: 52vh;
+  }
+}

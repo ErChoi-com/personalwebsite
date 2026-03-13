@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BlurText from '../components/ui/BlurText';
 import DecryptedText from '../components/ui/DecryptedText';
@@ -95,6 +95,10 @@ const footerCols = [
 
 /* ─── Component ─── */
 export default function Home() {
+  const [viewportWidth, setViewportWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 1280
+  );
+
   /* braille title animation (original) */
   useEffect(() => {
     const gridLength = 6;
@@ -149,12 +153,25 @@ export default function Home() {
     return () => io.disconnect();
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportWidth(window.innerWidth);
+    };
+
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const handleNav = useCallback((e, href) => {
     e.preventDefault();
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
   const rest = projects;
+  const cardWidth = viewportWidth <= 480 ? 280 : viewportWidth <= 768 ? 320 : 420;
+  const cardHeight = viewportWidth <= 480 ? 390 : viewportWidth <= 768 ? 440 : 520;
+  const cardDistance = viewportWidth <= 480 ? 32 : viewportWidth <= 768 ? 40 : 50;
+  const verticalDistance = viewportWidth <= 480 ? 36 : viewportWidth <= 768 ? 44 : 55;
 
   const handleCardClick = useCallback((idx) => {
     const p = projects[idx];
@@ -253,10 +270,10 @@ export default function Home() {
 
           <div className="card-swap-wrapper">
             <CardSwap
-              width={420}
-              height={520}
-              cardDistance={50}
-              verticalDistance={55}
+              width={cardWidth}
+              height={cardHeight}
+              cardDistance={cardDistance}
+              verticalDistance={verticalDistance}
               delay={800}
               pauseOnHover={true}
               easing="elastic"

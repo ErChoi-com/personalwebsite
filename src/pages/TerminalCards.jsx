@@ -25,6 +25,7 @@ const state = {
   isHostAudioBroadcasting: false,
   hostAudioStream: null,
   roomAudioCall: null,
+  memberAudioEnabled: false,
   directory: [],
 };
 
@@ -97,7 +98,7 @@ export default function TerminalCards() {
       hostDisabled: true,
       memberDisabled: false,
       hostLabel: 'Start Room Audio',
-      memberLabel: state.roomAudioCall ? 'Room Audio Enabled' : 'Enable Room Audio',
+      memberLabel: state.memberAudioEnabled ? 'Room Audio Enabled' : 'Enable Room Audio',
       showPlayer: Boolean(state.roomAudioCall),
     });
   }, []);
@@ -107,6 +108,7 @@ export default function TerminalCards() {
       state.roomAudioCall.close();
     }
     state.roomAudioCall = null;
+    state.memberAudioEnabled = false;
 
     if (roomAudioRef.current) {
       roomAudioRef.current.pause();
@@ -182,10 +184,20 @@ export default function TerminalCards() {
     }
 
     try {
-      state.hostAudioStream = await navigator.mediaDevices.getDisplayMedia({
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
         audio: true,
-        video: false
+        video: true
       });
+
+      const displayAudioTracks = displayStream.getAudioTracks();
+      const displayVideoTracks = displayStream.getVideoTracks();
+      displayVideoTracks.forEach((track) => track.stop());
+
+      if (displayAudioTracks.length === 0) {
+        throw new Error('No display audio track was selected.');
+      }
+
+      state.hostAudioStream = new MediaStream(displayAudioTracks);
     } catch (_displayErr) {
       try {
         state.hostAudioStream = await navigator.mediaDevices.getUserMedia({
@@ -236,6 +248,15 @@ export default function TerminalCards() {
 
   const handleMemberAudioEnable = useCallback(() => {
     if (!state.inRoom || state.hostOrUser !== 'user' || !state.conn || !state.conn.open) return;
+
+    state.memberAudioEnabled = true;
+
+    if (roomAudioRef.current) {
+      roomAudioRef.current.muted = false;
+      roomAudioRef.current.play().catch(() => {
+        // Expected on some browsers before a stream is attached.
+      });
+    }
 
     state.conn.send({
       type: 'audioOptIn',
@@ -432,6 +453,7 @@ export default function TerminalCards() {
 
         incomingCall.on('stream', async (remoteStream) => {
           if (!roomAudioRef.current) return;
+          roomAudioRef.current.muted = false;
           roomAudioRef.current.srcObject = remoteStream;
           try {
             await roomAudioRef.current.play();
@@ -584,6 +606,7 @@ export default function TerminalCards() {
       state.usernames = {};
       state.memberAudioOptIn = {};
       state.outboundAudioCalls = {};
+      state.memberAudioEnabled = false;
     };
   }, [clearMemberAudioState, stopHostAudioBroadcast]);
 
@@ -623,6 +646,7 @@ export default function TerminalCards() {
         className={`room-audio-player ${audioControls.showPlayer ? 'visible' : ''}`}
         controls
         autoPlay
+        playsInline
       />
     </div>
   );

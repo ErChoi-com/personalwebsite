@@ -170,3 +170,80 @@
   opacity: 1;
   pointer-events: auto;
 }
+
+@media (max-width: 900px) {
+  .terminal-page {
+    padding: 1.2rem;
+  }
+
+  .terminal-page input[type="text"] {
+    width: min(100%, 480px);
+  }
+
+  .terminal-page .btn-row {
+    width: 100%;
+    max-width: 800px;
+  }
+}
+
+@media (max-width: 640px) {
+  .terminal-page {
+    padding: 1rem 0.75rem;
+    align-items: stretch;
+  }
+
+  .terminal-page a.back-link {
+    margin-bottom: 1rem;
+    text-align: left;
+  }
+
+  .terminal-page p {
+    font-size: 0.92rem;
+  }
+
+  .terminal-page input[type="text"] {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .terminal-page .btn-row {
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+  }
+
+  .terminal-page button {
+    flex: 1 1 calc(50% - 0.45rem);
+    min-height: 42px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .terminal-body {
+    min-height: 44vh;
+    max-height: 50vh;
+    padding: 0.75rem;
+  }
+
+  .terminal-input-row {
+    padding: 0.55rem 0.75rem;
+  }
+
+  .terminal-input-row .terminal-input {
+    font-size: 16px;
+    min-height: 1.4em;
+  }
+}
+
+@media (max-width: 420px) {
+  .terminal-page button {
+    flex-basis: 100%;
+  }
+
+  .terminal-body {
+    min-height: 40vh;
+  }
+
+  .room-audio-player {
+    margin-top: 0.6rem;
+  }
+}
