@@ -1,14 +1,9 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import BlurText from '../components/ui/BlurText';
 import DecryptedText from '../components/ui/DecryptedText';
-import ShinyText from '../components/ui/ShinyText';
-import GradientText from '../components/ui/GradientText';
 import Magnet from '../components/ui/Magnet';
 import AnimatedContent from '../components/ui/AnimatedContent';
-import SpotlightCard from '../components/ui/SpotlightCard';
-import CardSwap, { Card } from '../components/ui/CardSwap';
-import ClickSpark from '../components/ui/ClickSpark';
+import '../styles/home.css';
 
 /* ─── Data (scalable — add entries here to extend) ─── */
 const skills = [
@@ -28,18 +23,9 @@ const stats = [
 
 const projects = [
   {
-    title: 'GitHub Portfolio',
-    tag: 'C++ • OpenGL',
-    description:
-      'A collection of experiments and projects — from OpenGL particle-fluid simulations to web tools and creative coding explorations.',
-    image: 'simulation-video.gif',
-    links: [
-      { label: 'Repositories', href: 'https://github.com/ErChoi-com?tab=repositories' },
-    ],
-  },
-  {
     title: 'TerminalCards',
     tag: 'WebRTC • P2P',
+    year: '2025',
     description:
       'A peer-to-peer web messaging app styled as a command-line interface utilizing WebRTC. Doubles as a collaborative coding platform and card-game hub.',
     image: 'images/cards.jpg',
@@ -51,55 +37,84 @@ const projects = [
   {
     title: 'TerrainSim',
     tag: 'Three.js • WebGL',
+    year: '2025',
     description:
       'An interactive terrain simulation engine for the web. Generates dynamic landscapes with real-time procedural environments powered by noise algorithms.',
     image: 'images/terrain.jpg',
+    imageClass: 'ed-img--terrain',
     links: [
       { label: 'Explore', to: '/terrain', internal: true },
       { label: 'Source', href: 'https://github.com/ErChoi-com/TerrainSim' },
     ],
   },
-];
-
-const navLinks = [
-  { label: 'Work', href: '#projects' },
-  { label: 'About', href: '#about' },
-  { label: 'Skills', href: '#skills' },
-  { label: 'Contact', href: '#contact' },
-];
-
-const footerCols = [
   {
-    heading: 'Projects',
+    title: 'GitHub Portfolio',
+    tag: 'C++ • OpenGL',
+    year: 'Ongoing',
+    description:
+      'A collection of experiments and projects — from OpenGL particle-fluid simulations to web tools and creative coding explorations.',
+    image: 'images/simulation-poster.jpg',
+    video: 'simulation.mp4',
     links: [
-      { label: 'TerminalCards', to: '/terminalcards', internal: true },
-      { label: 'TerrainSim', to: '/terrain', internal: true },
       { label: 'Repositories', href: 'https://github.com/ErChoi-com?tab=repositories' },
     ],
   },
-  {
-    heading: 'Connect',
-    links: [
-      { label: 'GitHub', href: 'https://github.com/ErChoi-com' },
-      { label: 'LinkedIn', href: 'https://linkedin.com/in/ernestchoi' },
-      { label: 'Email', href: 'mailto:ernestljchoi@gmail.com' },
-    ],
-  },
-  {
-    heading: 'Info',
-    links: [
-      { label: 'Resume', href: 'https://www.overleaf.com/read/njwfnpbccdzq#ce6706' },
-    ],
-  },
 ];
 
-/* ─── Component ─── */
-export default function Home() {
-  const [viewportWidth, setViewportWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1280
-  );
+/* Marquee reuses the project imagery plus the portrait; repeated so one half always outruns a wide screen */
+const marqueeItems = [
+  ...projects.map((p) => ({ title: p.title, tag: p.tag, image: p.image, imageClass: p.imageClass, link: p.links[0] })),
+  { title: 'Ernest Choi', tag: 'Developer • Engineer', image: 'images/ernestchoipic.jpg', link: { href: '#about', anchor: true } },
+];
+const marqueeHalf = [...marqueeItems, ...marqueeItems];
+const radiusPatterns = ['ed-radius-a', 'ed-radius-b', 'ed-radius-c'];
 
-  /* braille title animation (original) */
+const navLinks = [
+  { label: 'Work', href: '#work' },
+  { label: 'About', href: '#about' },
+  { label: 'Contact', href: '#contact' },
+];
+
+const socials = [
+  { label: 'GitHub', href: 'https://github.com/ErChoi-com' },
+  { label: 'LinkedIn', href: 'https://linkedin.com/in/ernestchoi' },
+];
+
+const contacts = [
+  { label: 'Email', href: 'mailto:ernestljchoi@gmail.com' },
+  { label: 'Resume', href: 'https://www.overleaf.com/read/njwfnpbccdzq#ce6706' },
+];
+
+const EASE_MAGNET = 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+
+/* GSAP sets inline transforms, so the CSS reduced-motion rule can't reach it */
+const REDUCED_MOTION = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const Reveal = ({ distance, duration, ...props }) => (
+  <AnimatedContent distance={REDUCED_MOTION ? 0 : distance} duration={REDUCED_MOTION ? 0.01 : duration} {...props} />
+);
+
+/* Looping clip that only plays while on screen; poster only under reduced motion */
+function AutoVideo({ src, poster, className }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.muted = true; // React doesn't reliably reflect the muted attribute
+    if (REDUCED_MOTION) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) el.play().catch(() => {});
+      else el.pause();
+    }, { threshold: 0.1 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return <video ref={ref} className={className} src={src} poster={poster} muted loop playsInline preload="none" aria-hidden="true" />;
+}
+
+/* ─── Braille title (original) — also renders the live pattern for the "This site" tile ─── */
+function BrailleTitle({ className }) {
+  const [pattern, setPattern] = useState('⠀⠀⠀⠀⠀⠀');
+
   useEffect(() => {
     const gridLength = 6;
     const rows = 4;
@@ -137,8 +152,98 @@ export default function Home() {
         seq += String.fromCharCode(0x2800 + t);
       }
       document.title = seq;
+      setPattern(seq);
     }, 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  return <span className={className} aria-hidden="true">{pattern}</span>;
+}
+
+/* ─── Difference cursor: lerped follower, fine pointers only ─── */
+function DifferenceCursor() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !window.matchMedia('(pointer: fine)').matches) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.body.classList.add('ed-cursor-on');
+
+    let x = 0, y = 0, tx = 0, ty = 0, raf = 0, shown = false;
+    const onMove = (e) => {
+      tx = e.clientX; ty = e.clientY;
+      if (!shown) { x = tx; y = ty; shown = true; el.classList.add('is-visible'); }
+    };
+    const onLeave = () => { shown = false; el.classList.remove('is-visible'); };
+    const onOver = (e) => {
+      el.classList.toggle('is-hover', !!e.target.closest?.('a, button'));
+    };
+    const tick = () => {
+      const k = reduce ? 1 : 0.18;
+      x += (tx - x) * k;
+      y += (ty - y) * k;
+      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      raf = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener('mousemove', onMove, { passive: true });
+    document.addEventListener('mouseover', onOver, { passive: true });
+    document.documentElement.addEventListener('mouseleave', onLeave);
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseover', onOver);
+      document.documentElement.removeEventListener('mouseleave', onLeave);
+      document.body.classList.remove('ed-cursor-on');
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className="ed-cursor" aria-hidden="true">
+      <span />
+    </div>
+  );
+}
+
+/* Letters slide up from behind a mask, staggered */
+function RevealText({ text, baseDelay = 0, step = 45 }) {
+  let i = 0;
+  return text.split(' ').map((word, w, words) => (
+    <React.Fragment key={w}>
+      <span className="ed-word">
+        {[...word].map((ch) => {
+          const delay = baseDelay + step * i++;
+          return (
+            <span className="ed-char-mask" key={i}>
+              <span className="ed-char" style={{ animationDelay: `${delay}ms` }}>{ch}</span>
+            </span>
+          );
+        })}
+      </span>
+      {w < words.length - 1 ? ' ' : null}
+    </React.Fragment>
+  ));
+}
+
+const LinkOut = ({ link, className, children, onAnchor, tabIndex, ariaLabel }) => {
+  const common = { className, tabIndex, 'aria-label': ariaLabel };
+  if (link.internal) return <Link to={link.to} {...common}>{children}</Link>;
+  if (link.anchor) return <a href={link.href} {...common} onClick={(e) => onAnchor(e, link.href)}>{children}</a>;
+  return <a href={link.href} target="_blank" rel="noreferrer" {...common}>{children}</a>;
+};
+
+/* ─── Component ─── */
+export default function Home() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const year = new Date().getFullYear();
+
+  /* White page background while Home is mounted */
+  useEffect(() => {
+    document.body.classList.add('ed-page');
+    document.documentElement.classList.remove('ed-boot'); // set pre-render in index.html to avoid a dark flash
+    return () => document.body.classList.remove('ed-page');
   }, []);
 
   /* Pause marquee animation when off-screen to save CPU */
@@ -147,305 +252,324 @@ export default function Home() {
     const el = marqueeRef.current;
     if (!el) return;
     const io = new IntersectionObserver(([entry]) => {
-      el.style.animationPlayState = entry.isIntersecting ? 'running' : 'paused';
+      el.classList.toggle('is-offscreen', !entry.isIntersecting);
     }, { threshold: 0 });
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
+  /* Menu: Escape closes, page behind is locked and inert, focus moves in and back out */
+  const toggleRef = useRef(null);
+  const menuRef = useRef(null);
+  const mainRef = useRef(null);
+  const footerRef = useRef(null);
+  const wasOpen = useRef(false);
   useEffect(() => {
-    const handleResize = () => {
-      setViewportWidth(window.innerWidth);
+    const root = document.documentElement;
+    if (!menuOpen) {
+      if (wasOpen.current) toggleRef.current?.focus({ preventScroll: true });
+      wasOpen.current = false;
+      return;
+    }
+    wasOpen.current = true;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    // Hiding the scrollbar would shift the page; pad by its width instead
+    root.style.setProperty('--ed-sbw', `${window.innerWidth - root.clientWidth}px`);
+    document.body.style.overflow = 'hidden';
+    [mainRef.current, footerRef.current].forEach((el) => el && (el.inert = true));
+    const t = setTimeout(() => menuRef.current?.querySelector('a')?.focus({ preventScroll: true }), 350);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = '';
+      root.style.removeProperty('--ed-sbw');
+      [mainRef.current, footerRef.current].forEach((el) => el && (el.inert = false));
     };
+  }, [menuOpen]);
 
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
+  /* Logo on the home page: close the menu and go back to the top */
+  const handleLogo = useCallback((e) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  /* In-page anchors must not reach HashRouter (it would route to /work etc.) */
   const handleNav = useCallback((e, href) => {
     e.preventDefault();
+    setMenuOpen(false);
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   }, []);
 
-  const rest = projects;
-  const cardWidth = viewportWidth <= 480 ? 280 : viewportWidth <= 768 ? 320 : 420;
-  const cardHeight = viewportWidth <= 480 ? 390 : viewportWidth <= 768 ? 440 : 520;
-  const cardDistance = viewportWidth <= 480 ? 32 : viewportWidth <= 768 ? 40 : 50;
-  const verticalDistance = viewportWidth <= 480 ? 36 : viewportWidth <= 768 ? 44 : 55;
-
-  const handleCardClick = useCallback((idx) => {
-    const p = projects[idx];
-    if (!p) return;
-    const link = p.links[0];
-    if (link.internal) {
-      window.location.hash = `#${link.to}`;
-    } else if (link.href) {
-      window.open(link.href, '_blank');
-    }
-  }, []);
-
   return (
-    <ClickSpark sparkColor="#a855f7" sparkSize={12} sparkRadius={20} sparkCount={10} duration={500}>
-      <div className="site-wrapper">
-        {/* ─── NAV ─── */}
-        <header className="site-header">
-          <nav className="nav">
-            <Link to="/" className="nav-logo">
-              <DecryptedText text="EC" animateOn="hover" speed={40} maxIterations={6} className="nav-logo-text" encryptedClassName="nav-logo-text encrypted" />
-            </Link>
+    <div className="ed">
+      <DifferenceCursor />
 
-            <ul className="nav-menu">
-              {navLinks.map((l) => (
+      {/* ─── NAV ─── */}
+      <header className="ed-header">
+        <Link to="/" className="ed-logo" aria-label="Ernest Choi — back to top" onClick={handleLogo}>
+          <DecryptedText text="ec" animateOn="hover" speed={40} maxIterations={6} characters="abcdefghijklmnopqrstuvwxyz" />
+        </Link>
+
+        <Magnet padding={40} magnetStrength={3} activeTransition={EASE_MAGNET} inactiveTransition={EASE_MAGNET}>
+          <button
+            ref={toggleRef}
+            type="button"
+            className={`ed-menu-toggle${menuOpen ? ' is-open' : ''}`}
+            aria-expanded={menuOpen}
+            aria-controls="ed-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="ed-menu-label">{menuOpen ? 'Close' : 'Menu'}</span>
+            <span className="ed-plus" aria-hidden="true" />
+          </button>
+        </Magnet>
+      </header>
+
+      <div id="ed-menu" ref={menuRef} className={`ed-menu${menuOpen ? ' is-open' : ''}`} aria-hidden={!menuOpen}>
+        <nav className="ed-menu-inner" aria-label="Main">
+          <ul className="ed-menu-list">
+            {navLinks.map((l, i) => (
+              <li key={l.label} style={{ transitionDelay: menuOpen ? `${120 + i * 60}ms` : '0ms' }}>
+                <a href={l.href} onClick={(e) => handleNav(e, l.href)} tabIndex={menuOpen ? 0 : -1}>
+                  <span className="ed-mono">0{i + 1}</span>{l.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div className="ed-menu-foot">
+            <Link to="/terminalcards" tabIndex={menuOpen ? 0 : -1}>TerminalCards ↗</Link>
+            <Link to="/terrain" tabIndex={menuOpen ? 0 : -1}>TerrainSim ↗</Link>
+            <a href="https://github.com/ErChoi-com" target="_blank" rel="noreferrer" tabIndex={menuOpen ? 0 : -1}>
+              <i className="fab fa-github" /> GitHub
+            </a>
+            <a href="https://www.overleaf.com/read/njwfnpbccdzq#ce6706" target="_blank" rel="noreferrer" tabIndex={menuOpen ? 0 : -1}>
+              <i className="fas fa-file-alt" /> Resume
+            </a>
+          </div>
+        </nav>
+      </div>
+
+      <main ref={mainRef}>
+        {/* ─── HERO ─── */}
+        <section className="ed-hero">
+          <p className="ed-mono ed-hero-label">
+            <span className="ed-char-mask"><span className="ed-char">Portfolio — {year}</span></span>
+          </p>
+
+          <h1 className="ed-hero-title" aria-label="Ernest Choi">
+            <span aria-hidden="true"><RevealText text="Ernest Choi" baseDelay={150} /></span>
+          </h1>
+
+          <p className="ed-hero-sub">
+            <span className="ed-char-mask"><span className="ed-char" style={{ animationDelay: '700ms' }}>Developer &bull; Creator &bull; Engineer</span></span>
+          </p>
+
+          <div className="ed-hero-ctas">
+            <Link to="/terminalcards" className="ed-btn ed-btn--solid">TerminalCards</Link>
+            <Link to="/terrain" className="ed-btn">TerrainSim</Link>
+          </div>
+
+          <div className="ed-scroll-indicator" aria-hidden="true">
+            <span className="ed-mono">Scroll</span>
+            <span className="ed-scroll-line" />
+          </div>
+        </section>
+
+        {/* ─── INFINITE PROJECT MARQUEE ─── */}
+        <section className="ed-marquee" aria-label="Project gallery">
+          <div className="ed-marquee-track" ref={marqueeRef}>
+            {[0, 1].map((half) => (
+              <div className="ed-marquee-half" key={half} aria-hidden={half === 1}>
+                {marqueeHalf.map((item, i) => {
+                  // Only the first set is reachable by keyboard / screen readers; the rest are visual repeats
+                  const primary = half === 0 && i < marqueeItems.length;
+                  return (
+                  <LinkOut
+                    key={`${half}-${i}`}
+                    link={item.link}
+                    onAnchor={handleNav}
+                    tabIndex={primary ? undefined : -1}
+                    className={`ed-mcard ${radiusPatterns[(i + Math.floor(i / marqueeItems.length)) % radiusPatterns.length]}`}
+                  >
+                    <span className="ed-mcard-media">
+                      <img src={item.image} alt={primary ? `${item.title} preview` : ''} loading="lazy" className={item.imageClass} />
+                    </span>
+                    <span className="ed-mcard-caption ed-mono">
+                      <span>{item.title}</span>
+                      <span>{item.tag}</span>
+                    </span>
+                  </LinkOut>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── ABOUT (centered statement) ─── */}
+        <section id="about" className="ed-section ed-intro">
+          <Reveal distance={50} duration={1} ease="expo.out">
+            <p className="ed-mono ed-section-tag">(Who I Am)</p>
+            <h2 className="ed-intro-heading">
+              Building creative software from <em>concept</em> to <em>reality</em>.
+            </h2>
+          </Reveal>
+
+          <Reveal distance={40} duration={1} delay={0.1} ease="expo.out">
+            <p className="ed-intro-body">
+              I'm <strong>Ernest Choi</strong> — a developer and engineer focused on
+              interactive browser simulations, retro-inspired tools, and creative coding experiments.
+              From <em>TerrainSim</em>'s procedural landscapes to <em>TerminalCards</em>' P2P messaging,
+              I ship projects that merge technical depth with playful design.
+            </p>
+            <p className="ed-intro-body ed-intro-body--dim">
+              My focus is on building technical tools that I can use in my day to day.
+            </p>
+          </Reveal>
+
+          <Reveal distance={30} duration={1} delay={0.2} ease="expo.out">
+            <dl className="ed-stats">
+              {stats.map((s) => (
+                <div className="ed-stat" key={s.label}>
+                  <dt className="ed-mono">{s.label}</dt>
+                  <dd>{s.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Reveal>
+
+          <Reveal distance={30} duration={1} delay={0.25} ease="expo.out">
+            <div className="ed-toolbox">
+              <span className="ed-mono ed-toolbox-label">Toolbox</span>
+              <ul>
+                {skills.map((s) => (
+                  <li key={s.label}><i className={s.icon} aria-hidden="true" />{s.label}</li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* ─── PROJECT GRID ─── */}
+        <section id="work" className="ed-section ed-work">
+          <Reveal distance={40} duration={1} ease="expo.out">
+            <div className="ed-section-head">
+              <h2 className="ed-section-title">Selected work</h2>
+              <a href="https://github.com/ErChoi-com?tab=repositories" target="_blank" rel="noreferrer" className="ed-mono ed-underline">
+                View all →
+              </a>
+            </div>
+          </Reveal>
+
+          <div className="ed-grid">
+            {projects.map((p, idx) => (
+              <Reveal key={p.title} distance={60} duration={1} delay={(idx % 2) * 0.1} ease="expo.out">
+                <article className="ed-proj">
+                  <LinkOut link={p.links[0]} className="ed-proj-media" ariaLabel={`${p.title} — ${p.links[0].label}`}>
+                    {p.video ? (
+                      <AutoVideo src={p.video} poster={p.image} />
+                    ) : (
+                      <img src={p.image} alt={`${p.title} preview`} loading="lazy" className={p.imageClass} />
+                    )}
+                    <span className="ed-proj-overlay" aria-hidden="true" />
+                    <span className="ed-proj-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M7 17L17 7M8 7h9v9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                  </LinkOut>
+                  <div className="ed-proj-meta">
+                    <h3>{p.title}</h3>
+                    <span className="ed-proj-cat">{p.tag}</span>
+                    <span className="ed-mono">{p.year}</span>
+                  </div>
+                  <p className="ed-proj-desc">{p.description}</p>
+                  <div className="ed-proj-links">
+                    {p.links.map((link) => (
+                      <LinkOut key={link.label} link={link} className="ed-mono ed-underline">
+                        {link.label} {link.internal ? '→' : '↗'}
+                      </LinkOut>
+                    ))}
+                  </div>
+                </article>
+              </Reveal>
+            ))}
+
+            {/* This site — the live braille title as its artwork */}
+            <Reveal distance={60} duration={1} delay={0.1} ease="expo.out">
+              <article className="ed-proj">
+                <a href="https://github.com/ErChoi-com/personalwebsite" target="_blank" rel="noreferrer" className="ed-proj-media ed-proj-media--braille" aria-label="This Site — Source">
+                  <BrailleTitle className="ed-braille" />
+                  <span className="ed-braille-caption ed-mono">Live from this tab's title</span>
+                  <span className="ed-proj-overlay" aria-hidden="true" />
+                  <span className="ed-proj-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M7 17L17 7M8 7h9v9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+                </a>
+                <div className="ed-proj-meta">
+                  <h3>This Site</h3>
+                  <span className="ed-proj-cat">React • Vite</span>
+                  <span className="ed-mono">{year}</span>
+                </div>
+                <p className="ed-proj-desc">
+                  The portfolio you're on. The browser tab title is a generative 8-dot braille
+                  animation that fills a 4×12 grid and resets more often the fuller it gets.
+                </p>
+                <div className="ed-proj-links">
+                  <a href="https://github.com/ErChoi-com/personalwebsite" target="_blank" rel="noreferrer" className="ed-mono ed-underline">Source ↗</a>
+                </div>
+              </article>
+            </Reveal>
+          </div>
+        </section>
+      </main>
+
+      {/* ─── FOOTER / CONTACT ─── */}
+      <footer id="contact" className="ed-footer" ref={footerRef}>
+        <Reveal distance={50} duration={1} ease="expo.out">
+          <div className="ed-footer-cta">
+            <p className="ed-mono ed-section-tag ed-section-tag--light">(Get in Touch)</p>
+            <h2 className="ed-footer-heading">Let's work<br />together.</h2>
+            <p className="ed-footer-sub">Interested in collaborating, hiring, or just chatting about projects?</p>
+            <Magnet padding={60} magnetStrength={4} activeTransition={EASE_MAGNET} inactiveTransition={EASE_MAGNET}>
+              <a href="mailto:ernestljchoi@gmail.com" className="ed-btn ed-btn--light">
+                ernestljchoi@gmail.com <span aria-hidden="true">↗</span>
+              </a>
+            </Magnet>
+          </div>
+        </Reveal>
+
+        <div className="ed-footer-grid">
+          <div className="ed-footer-brand">
+            <DecryptedText text="Ernest Choi" animateOn="view" sequential speed={30} parentClassName="ed-footer-name" />
+            <p>
+              Developer and engineer building interactive browser simulations,
+              retro-inspired tools and creative coding experiments.
+            </p>
+          </div>
+
+          <div className="ed-footer-col">
+            <h4 className="ed-mono">Socials</h4>
+            <ul>
+              {socials.map((l) => (
+                <li key={l.label}><a href={l.href} target="_blank" rel="noreferrer" className="ed-underline">{l.label}</a></li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="ed-footer-col">
+            <h4 className="ed-mono">Contact</h4>
+            <ul>
+              {contacts.map((l) => (
                 <li key={l.label}>
-                  <a href={l.href} onClick={(e) => handleNav(e, l.href)} className="nav-link">
-                    {l.label}
-                  </a>
+                  <a href={l.href} target={l.href.startsWith('mailto') ? undefined : '_blank'} rel="noreferrer" className="ed-underline">{l.label}</a>
                 </li>
               ))}
             </ul>
-
-            <div className="nav-actions">
-              <Magnet padding={40} magnetStrength={3}>
-                <a href="https://github.com/ErChoi-com" target="_blank" rel="noreferrer" className="nav-icon-link" aria-label="GitHub">
-                  <i className="fab fa-github"></i>
-                </a>
-              </Magnet>
-              <Magnet padding={40} magnetStrength={3}>
-                <a href="https://www.overleaf.com/read/njwfnpbccdzq#ce6706" target="_blank" rel="noreferrer" className="nav-icon-link" aria-label="Resume">
-                  <i className="fas fa-file-alt"></i>
-                </a>
-              </Magnet>
-            </div>
-          </nav>
-        </header>
-
-        {/* ─── HERO ─── */}
-        <section className="hero">
-          <div className="hero-inner">
-            <p className="hero-label">
-              <ShinyText text="Portfolio — 2025" speed={4} className="hero-label-shiny" />
-            </p>
-
-            <h1 className="hero-title">
-              <BlurText text="Ernest" delay={100} className="hero-title-word" animateBy="letters" direction="top" stepDuration={0.35} />
-              <br />
-              <BlurText text="Choi" delay={100} className="hero-title-word" animateBy="letters" direction="top" stepDuration={0.35} />
-            </h1>
-
-            <p className="hero-subtitle">
-              <GradientText colors={['#6366f1', '#a855f7', '#ec4899', '#06b6d4', '#6366f1']} animationSpeed={6}>
-                Developer &bull; Creator &bull; Engineer
-              </GradientText>
-            </p>
-
-            <div className="hero-ctas">
-              <Magnet padding={60} magnetStrength={2}>
-                <Link to="/terminalcards" className="btn btn-primary">TerminalCards</Link>
-              </Magnet>
-              <Magnet padding={60} magnetStrength={2}>
-                <Link to="/terrain" className="btn btn-outline">TerrainSim</Link>
-              </Magnet>
-            </div>
           </div>
+        </div>
 
-          <div className="hero-scroll-indicator">
-            <span>Scroll</span>
-            <div className="hero-scroll-line" />
-          </div>
-        </section>
-
-        {/* ─── PROJECTS (CardSwap) ─── */}
-        <section id="projects" className="section section-projects-swap">
-          <AnimatedContent distance={50} duration={0.8}>
-            <div className="section-divider">
-              <span className="section-tag">Projects</span>
-              <span className="divider-line" />
-              <span className="section-action">
-                <a href="https://github.com/ErChoi-com?tab=repositories" target="_blank" rel="noreferrer">
-                  View All &rarr;
-                </a>
-              </span>
-            </div>
-          </AnimatedContent>
-
-          <div className="card-swap-wrapper">
-            <CardSwap
-              width={cardWidth}
-              height={cardHeight}
-              cardDistance={cardDistance}
-              verticalDistance={verticalDistance}
-              delay={800}
-              pauseOnHover={true}
-              easing="elastic"
-              skewAmount={4}
-              onCardClick={handleCardClick}
-            >
-              {rest.map((p) => (
-                <Card key={p.title} customClass="project-swap-card">
-                  <div className="project-swap-image">
-                    <img src={p.image} alt={`${p.title} preview`} loading="lazy" />
-                  </div>
-                  <div className="project-swap-body">
-                    <span className="project-swap-tag">{p.tag}</span>
-                    <h3 className="project-swap-title">{p.title}</h3>
-                    <p className="project-swap-desc">{p.description}</p>
-                    <div className="project-swap-links">
-                      {p.links.map((link) =>
-                        link.internal ? (
-                          <Link key={link.label} to={link.to} className="btn btn-sm btn-primary">{link.label}</Link>
-                        ) : (
-                          <a key={link.label} href={link.href} target="_blank" rel="noreferrer" className="btn btn-sm btn-ghost">{link.label} &rarr;</a>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </CardSwap>
-          </div>
-        </section>
-
-        {/* ─── ABOUT ─── */}
-        <section id="about" className="section section-about">
-          <AnimatedContent distance={50} duration={0.8}>
-            <div className="section-divider">
-              <span className="section-tag">Who I Am</span>
-              <span className="divider-line" />
-            </div>
-          </AnimatedContent>
-
-          <div className="about-grid">
-            <AnimatedContent distance={60} direction="horizontal" reverse duration={0.9}>
-              <div className="about-image-wrapper">
-                <img src="images/ernestchoipic.jpg" alt="Ernest Choi" loading="lazy" />
-              </div>
-            </AnimatedContent>
-
-            <AnimatedContent distance={60} direction="horizontal" duration={0.9} delay={0.15}>
-              <div className="about-content">
-                <h2 className="about-heading">
-                  Building creative software<br />
-                  from <em>concept</em> to <em>reality</em>.
-                </h2>
-                <p>
-                  I'm <strong>Ernest Choi</strong> — a developer and engineer focused on
-                  interactive browser simulations, retro-inspired tools, and creative coding experiments.
-                  From <em>TerrainSim</em>'s procedural landscapes to <em>TerminalCards</em>' P2P messaging,
-                  I ship projects that merge technical depth with playful design.
-                </p>
-                <p>My focus is on building technical tools that I can use in my day to day.</p>
-              </div>
-            </AnimatedContent>
-          </div>
-
-          {/* Stats row */}
-          <AnimatedContent distance={40} delay={0.25} duration={0.7}>
-            <div className="stats-row">
-              {stats.map((s) => (
-                <div className="stat" key={s.label}>
-                  <span className="stat-value">{s.value}</span>
-                  <span className="stat-label">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          </AnimatedContent>
-        </section>
-
-        {/* ─── SKILLS ─── */}
-        <section id="skills" className="section section-skills">
-          <AnimatedContent distance={50} duration={0.8}>
-            <div className="section-divider">
-              <span className="section-tag">Toolbox</span>
-              <span className="divider-line" />
-            </div>
-          </AnimatedContent>
-
-          {/* Infinite marquee ticker (awwwards-style) */}
-          <div className="marquee-wrapper">
-            <div className="marquee-track" ref={marqueeRef}>
-              {[...skills, ...skills, ...skills].map((s, i) => (
-                <Magnet key={`${s.label}-${i}`} padding={30} magnetStrength={3}>
-                  <span className="skill-pill">
-                    <i className={s.icon}></i>
-                    {s.label}
-                  </span>
-                </Magnet>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── CONTACT (bold CTA like awwwards) ─── */}
-        <section id="contact" className="section section-contact">
-          <AnimatedContent distance={50} duration={0.8}>
-            <div className="section-divider">
-              <span className="section-tag">Get in Touch</span>
-              <span className="divider-line" />
-            </div>
-          </AnimatedContent>
-
-          <div className="contact-cta">
-            <AnimatedContent distance={60} duration={0.9}>
-              <h2 className="contact-heading">
-                Let's work<br />together.
-              </h2>
-            </AnimatedContent>
-
-            <AnimatedContent distance={40} delay={0.15} duration={0.7}>
-              <p className="contact-subtitle">
-                Interested in collaborating, hiring, or just chatting about projects?
-              </p>
-            </AnimatedContent>
-
-            <div className="contact-links">
-              {[
-                { href: 'mailto:ernestljchoi@gmail.com', icon: 'fa-solid fa-envelope', label: 'Email' },
-                { href: 'https://github.com/ErChoi-com', icon: 'fab fa-github', label: 'GitHub' },
-                { href: 'https://linkedin.com/in/ernestchoi', icon: 'fab fa-linkedin', label: 'LinkedIn' },
-              ].map((c, idx) => (
-                <AnimatedContent key={c.label} distance={30} delay={0.25 + idx * 0.08} duration={0.6}>
-                  <Magnet padding={50} magnetStrength={2}>
-                    <a href={c.href} target={c.href.startsWith('mailto') ? undefined : '_blank'} rel="noreferrer" className="contact-link">
-                      <i className={c.icon}></i>
-                      <span>{c.label}</span>
-                      <i className="fa-solid fa-arrow-right contact-link-arrow"></i>
-                    </a>
-                  </Magnet>
-                </AnimatedContent>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ─── FOOTER (multi-column like awwwards) ─── */}
-        <footer className="site-footer">
-          <div className="footer-inner">
-            <div className="footer-brand">
-              <DecryptedText text="Ernest Choi" animateOn="view" sequential speed={30} className="footer-logo-text" encryptedClassName="footer-logo-text encrypted" />
-              <span className="footer-copy">&copy; {new Date().getFullYear()}</span>
-            </div>
-
-            <div className="footer-columns">
-              {footerCols.map((col) => (
-                <div className="footer-col" key={col.heading}>
-                  <h4 className="footer-col-heading">{col.heading}</h4>
-                  <ul>
-                    {col.links.map((l) => (
-                      <li key={l.label}>
-                        {l.internal ? (
-                          <Link to={l.to} className="footer-link">{l.label}</Link>
-                        ) : (
-                          <a href={l.href} target="_blank" rel="noreferrer" className="footer-link">{l.label}</a>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-        </footer>
-      </div>
-    </ClickSpark>
+        <div className="ed-footer-bar">
+          <span>&copy; {year} Ernest Choi</span>
+          <span>Built with React + Vite</span>
+        </div>
+      </footer>
+    </div>
   );
 }

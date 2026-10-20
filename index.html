@@ -5,15 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ernest Choi</title>
 
+    <!-- Home is white; paint it white before the bundle loads (Home removes this class) -->
+    <script>
+        if (!location.hash || location.hash === '#/') document.documentElement.classList.add('ed-boot');
+    </script>
+    <style>html.ed-boot, html.ed-boot body { background: #fff; }</style>
+
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" media="print" onload="this.media='all'" />
 
     <!-- SEO Meta -->
     <meta name="description" content="Portfolio of Ernest Choi – Developer and Engineer. Showcasing projects, skills, and creative experiments like TerminalCards and TerrainSim." />
+    <link rel="canonical" href="https://www.ernestchoi.com/" />
+
+    <!-- Social previews -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.ernestchoi.com/" />
+    <meta property="og:title" content="Ernest Choi — Developer & Engineer" />
+    <meta property="og:description" content="Interactive browser simulations, retro-inspired tools and creative coding experiments like TerminalCards and TerrainSim." />
+    <meta property="og:image" content="https://www.ernestchoi.com/images/ernestchoipic.jpg" />
+    <meta name="twitter:card" content="summary" />
 </head>
 <body>
     <div id="root"></div>

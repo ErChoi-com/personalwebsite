@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react';
-import { motion } from 'motion/react';
 
 const styles = {
   wrapper: { display: 'inline-block', whiteSpace: 'pre-wrap' },
@@ -120,7 +119,7 @@ export default function DecryptedText({
     : {};
 
   return (
-    <motion.span className={parentClassName} ref={containerRef} style={styles.wrapper} {...hoverProps} {...props}>
+    <span className={parentClassName} ref={containerRef} style={styles.wrapper} {...hoverProps} {...props}>
       <span style={styles.srOnly}>{displayText}</span>
       <span aria-hidden="true">
         {displayText.split('').map((char, index) => {
@@ -132,6 +131,6 @@ export default function DecryptedText({
           );
         })}
       </span>
-    </motion.span>
+    </span>
   );
 }
