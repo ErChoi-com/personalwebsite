@@ -1,249 +1,1280 @@
-/* TerminalCards styles - dark terminal theme */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=VT323&display=swap');
+
+/* ═══════════════════════════════════════════════════════
+   TerminalCards
+   The page follows the "Observe" look: black, monochrome, liquid-glass
+   pills over a slow background video, Instrument Serif for the headline only.
+   The terminal is the one exception: an old-school green phosphor CRT.
+   Every rule is scoped to .terminal-page, because this sheet stays loaded
+   after the route is left.
+   ═══════════════════════════════════════════════════════ */
+
 .terminal-page {
-  margin: 0;
-  padding: 0;
-  font-family: 'Courier New', 'Times New Roman', Times, serif;
-  background-color: #0d1117;
-  color: #c9d1d9;
-  min-height: 100vh;
+  --fg: #ffffff;
+  --ph: #39ff7a; /* phosphor */
+  --ph-bright: #b6ffcf;
+  --ph-dim: #27b85a;
+  --ph-faint: rgba(57, 255, 122, 0.35);
+  --ph-bg: #030803;
+  --ph-glow:
+    0 0 2px rgba(57, 255, 122, 0.75), 0 0 9px rgba(57, 255, 122, 0.35),
+    0.6px 0 1px rgba(255, 70, 90, 0.22), -0.6px 0 1px rgba(80, 150, 255, 0.22);
+  --crt: 'VT323', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans: var(--ff-sans, 'Inter', system-ui, sans-serif);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 560px;
+  /* Blocks waiting off-screen below must never make the page scroll. */
+  overflow: hidden;
+  background: #000;
+  color: var(--fg);
+  font-family: var(--sans);
+}
+
+.terminal-page ::selection {
+  background: #fff;
+  color: #000;
+}
+
+.terminal-page .tc-crt-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #000;
+  pointer-events: none;
+}
+
+.terminal-page .tc-crt-backdrop canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Liquid glass ─── */
+.terminal-page .liquid-glass,
+.terminal-page .liquid-glass-circle {
+  position: relative;
+  overflow: hidden;
+  border: none;
+  background-blend-mode: luminosity;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.terminal-page .liquid-glass {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.terminal-page .liquid-glass::before,
+.terminal-page .liquid-glass-circle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1.4px;
+  border-radius: inherit;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* On a small circle the rim must never fade to zero, or it splits into two arcs. */
+.terminal-page .liquid-glass-circle::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.22) 30%,
+    rgba(255, 255, 255, 0.16) 50%,
+    rgba(255, 255, 255, 0.22) 70%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+}
+
+/* ─── Shared pills ─── */
+.terminal-page .tc-pill-white {
+  flex-shrink: 0;
+  padding: 0.55rem 1.25rem;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font: 500 0.875rem/1.2 var(--sans);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.3s;
+}
+
+.terminal-page .tc-pill-white:hover {
+  transform: scale(1.05);
+}
+
+.terminal-page .tc-text-btn {
+  flex-shrink: 0;
+  padding: 0.55rem 0.6rem;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font: 500 0.875rem/1.2 var(--sans);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.terminal-page .tc-text-btn:hover {
+  color: #fff;
+}
+
+.terminal-page :is(.tc-pill-white, .tc-text-btn, .tc-circle):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+/* White text that can land on the bright disk gets the same dark aura as the subline. */
+.terminal-page :is(.tc-brand, .tc-nav-status, .tc-join input, .tc-text-btn),
+.terminal-page .tc-join input::placeholder {
+  text-shadow:
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85),
+    0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+/* "Join Room" can sit right over the glowing disk: give it a tighter, darker aura. */
+.terminal-page .tc-text-btn {
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 1),
+    0 0 8px rgba(0, 0, 0, 0.95),
+    0 0 18px rgba(0, 0, 0, 0.8);
+}
+
+/* ─── Navbar ─── */
+.terminal-page .tc-nav {
+  position: relative;
+  z-index: 30;
+  padding: 1.25rem 1.5rem 0;
+}
+
+.terminal-page .tc-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0.375rem 0.375rem 0.375rem 1.5rem;
+  border-radius: 999px;
+}
+
+.terminal-page .tc-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.terminal-page .tc-logo {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.terminal-page .tc-brand {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.terminal-page .tc-nav-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-left: 1.75rem;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-page .tc-dot {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  border-radius: 999px;
+}
+
+.terminal-page .tc-dot.host,
+.terminal-page .tc-dot.user {
+  border-color: #fff;
+  background: #fff;
+}
+
+/* ─── The assembled screen ───
+   One screen, laid out as the finished page. Each block rests off-screen below
+   its slot until a scroll pulls it up into place (driven from the page script). */
+.terminal-page .tc-hero {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  min-height: 0;
+  padding: 1.75rem 1.5rem 0;
+  text-align: center;
+}
+
+.terminal-page .tc-block {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
+  width: 100%;
 }
 
-.terminal-page a.back-link {
-  color: #a855f7;
-  text-decoration: none;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-  font-size: 0.875rem;
-  letter-spacing: 0.03em;
-  transition: color 0.3s;
+.terminal-page .tc-block-terminal {
+  flex: 1;
+  min-height: 0;
 }
 
-.terminal-page a.back-link:hover {
-  color: #c084fc;
-}
-
-.terminal-page p {
-  margin: 0.5rem 0;
-  font-size: 1rem;
-  color: #8b949e;
-}
-
-.terminal-page input[type="text"] {
-  width: 280px;
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 1rem;
-  background-color: #161b22;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  border-radius: 6px;
-  font-family: 'Courier New', monospace;
-  font-size: 0.95rem;
-  transition: border-color 0.2s;
-}
-
-.terminal-page input[type="text"]:focus {
-  outline: none;
-  border-color: #58a6ff;
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
-}
-
-.terminal-page .btn-row {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.terminal-page button {
-  padding: 0.5rem 1.2rem;
-  background-color: #21262d;
-  color: #c9d1d9;
-  border: 1px solid #30363d;
-  border-radius: 6px;
+.terminal-page .tc-scroll-cue {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  z-index: 20;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font: 500 0.875rem/1 var(--sans);
   cursor: pointer;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  font-size: 0.9rem;
-  transition: all 0.2s;
+  transform: translateX(-50%);
+  transition: opacity 0.4s;
+  text-shadow:
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85);
 }
 
-.terminal-page button:hover {
-  background-color: #30363d;
-  border-color: #58a6ff;
-  color: #58a6ff;
+.terminal-page .tc-scroll-cue[hidden] {
+  display: block;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.terminal-page button:disabled {
-  background-color: #1b1f24;
-  border-color: #2d333b;
-  color: #6e7681;
+.terminal-page .tc-scroll-cue:hover {
+  color: #fff;
+}
+
+.terminal-page .tc-scroll-cue:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
+
+.terminal-page .tc-headline {
+  margin-bottom: 0.6rem;
+  font-family: var(--serif);
+  font-size: clamp(2.6rem, 6vw, 5.25rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  /* A dark aura, not a drop shadow: the CRT ring behind is close to white. */
+  text-shadow:
+    0 0 18px rgba(0, 0, 0, 0.75),
+    0 0 72px rgba(0, 0, 0, 0.6),
+    0 4px 28px rgba(0, 0, 0, 0.4);
+}
+
+.terminal-page .tc-headline em {
+  font-style: italic;
+}
+
+.terminal-page .tc-subline {
+  max-width: 42rem;
+  margin-bottom: 1.5rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-shadow:
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85),
+    0 0 30px rgba(0, 0, 0, 0.6);
+}
+
+/* The join bar: two fields and the call to action flush inside one pill. */
+.terminal-page .tc-join {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 36rem;
+  margin-bottom: 1.25rem;
+  padding: 0.375rem 0.375rem 0.375rem 1.5rem;
+  border-radius: 999px;
+}
+
+.terminal-page .tc-join input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.55rem 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font: 400 0.875rem/1.2 var(--sans);
+}
+
+.terminal-page .tc-join input::placeholder {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.terminal-page .tc-join input:disabled {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.terminal-page .tc-join-divider {
+  flex-shrink: 0;
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.5rem;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── The CRT ─── */
+.terminal-page .tc-window {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  max-width: 60rem;
+  min-height: 0;
+  padding: 0.6rem;
+  border-radius: 2rem;
+  text-align: left;
+}
+
+.terminal-page .tc-screen {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: radial-gradient(ellipse at 50% 45%, #0a1a0d 0%, var(--ph-bg) 75%);
+  box-shadow:
+    inset 0 0 0 2px rgba(0, 0, 0, 0.65),
+    inset 0 0 70px rgba(0, 0, 0, 0.92),
+    inset 0 0 18px rgba(57, 255, 122, 0.14);
+  color: var(--ph);
+  font-family: var(--crt);
+  font-size: 1.3rem;
+  line-height: 1.15;
+  text-shadow: var(--ph-glow);
+  animation: tc-flicker 6s infinite;
+}
+
+/* Glass glare in the top corner, and the refresh bar rolling down the tube. */
+.terminal-page .tc-screen::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+  background:
+    radial-gradient(120% 70% at 18% 4%, rgba(255, 255, 255, 0.075), transparent 42%),
+    linear-gradient(to bottom, transparent, rgba(120, 255, 170, 0.075) 50%, transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 100%, 100% 24%;
+  background-position: 0 0, 0 -40%;
+  pointer-events: none;
+  animation: tc-roll 8s linear infinite;
+}
+
+/* Fine phosphor static, jittering every few frames. */
+.terminal-page .tc-static {
+  position: absolute;
+  inset: -40px;
+  z-index: 4;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 1 0 0 0 0 0.7 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.055;
+  pointer-events: none;
+  animation: tc-static 0.45s steps(1) infinite;
+}
+
+/* Switching on: a dot, a hot line, then the picture opens out. */
+.terminal-page .tc-screen.tc-power-on {
+  animation:
+    tc-power-on 0.95s cubic-bezier(0.2, 0.7, 0.2, 1) both,
+    tc-flicker 6s infinite;
+}
+
+/* Switching off: the picture collapses to a line and a fading dot. */
+.terminal-page .tc-screen.tc-power-off {
+  animation: tc-power-off 0.4s ease-in both;
+}
+
+@keyframes tc-power-on {
+  0% {
+    transform: scale(0.02, 0.006);
+    filter: brightness(5);
+  }
+  30% {
+    transform: scale(1, 0.006);
+    filter: brightness(3.5);
+  }
+  65% {
+    transform: scale(1, 1.02);
+    filter: brightness(1.6);
+  }
+  100% {
+    transform: none;
+    filter: none;
+  }
+}
+
+@keyframes tc-power-off {
+  0% {
+    transform: none;
+    filter: none;
+  }
+  55% {
+    transform: scale(1, 0.006);
+    filter: brightness(3);
+  }
+  100% {
+    transform: scale(0, 0.006);
+    filter: brightness(5);
+    opacity: 0;
+  }
+}
+
+@keyframes tc-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  41% {
+    opacity: 1;
+  }
+  41.5% {
+    opacity: 0.93;
+  }
+  42% {
+    opacity: 1;
+  }
+  77% {
+    opacity: 0.985;
+  }
+  78% {
+    opacity: 1;
+  }
+}
+
+@keyframes tc-roll {
+  to {
+    background-position: 0 0, 0 140%;
+  }
+}
+
+@keyframes tc-static {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-13px, 9px);
+  }
+  50% {
+    transform: translate(7px, -17px);
+  }
+  75% {
+    transform: translate(-21px, -5px);
+  }
+}
+
+/* Scanlines and a vignette, laid over everything but never catching clicks. */
+.terminal-page .tc-screen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  background:
+    /* Soft beam falloff between lines, not hard black rules. */
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.17) 0,
+      rgba(0, 0, 0, 0.05) 1px,
+      rgba(0, 0, 0, 0) 1.5px,
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.17) 3px
+    ),
+    radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+.terminal-page .tc-statusline {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 1.1rem;
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+.terminal-page .tc-statusline-mid {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.terminal-page .terminal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 0.7rem 1.1rem;
+  overflow-y: auto;
+  scrollbar-color: var(--ph-faint) transparent;
+}
+
+.terminal-page .terminal-body:empty::before {
+  content: attr(data-empty);
+  color: var(--ph);
+  white-space: pre-wrap;
+}
+
+/* ─── Log lines ─── */
+.terminal-page .tc-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.terminal-page .tc-input {
+  margin-top: 0.35rem;
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-caret {
+  display: none;
+}
+
+.terminal-page .tc-input::before {
+  content: '> ';
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-who {
+  margin-right: 1ch;
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-who::after {
+  content: ':';
+}
+
+.terminal-page .tc-self .tc-who {
+  padding: 0 0.4ch;
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-system {
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-system::before {
+  content: '* ';
+}
+
+.terminal-page .tc-move::before {
+  content: '>> ';
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-warn::before {
+  content: '? ';
+}
+
+.terminal-page .tc-error {
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-error::before {
+  content: '?ERR ';
+  padding-right: 0.3ch;
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-output {
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-key {
+  display: inline-block;
+  min-width: 14ch;
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-key::after {
+  content: ':';
+}
+
+.terminal-page .tc-turn {
+  margin: 0.3rem 0;
+  padding: 0 0.6ch;
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-turn::before,
+.terminal-page .tc-turn::after {
+  content: ' *** ';
+}
+
+.terminal-page .tc-win {
+  padding: 0.2rem 0;
+  color: var(--ph-bright);
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.terminal-page .tc-rule {
+  height: 0;
+  margin: 0.35rem 0;
+  border-top: 2px dashed var(--ph-faint);
+}
+
+/* A card name in the log: [K♥] */
+.terminal-page .tc-card {
+  margin: 0 0.25ch;
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-card::before {
+  content: '[';
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-card::after {
+  content: ']';
+  color: var(--ph-dim);
+}
+
+.terminal-page .tc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ─── Table (drawn inside the CRT) ─── */
+.terminal-page .tc-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 2px dashed var(--ph-faint);
+}
+
+.terminal-page .tc-table-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1.5rem;
+}
+
+.terminal-page .tc-pile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.terminal-page .tc-face {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 4.6rem;
+  border: 2px solid var(--ph);
+  border-radius: 6px;
+  box-shadow:
+    0 0 8px rgba(57, 255, 122, 0.35),
+    inset 0 0 8px rgba(57, 255, 122, 0.2);
+}
+
+.terminal-page .tc-face-suit {
+  font-size: 2rem;
+}
+
+.terminal-page .tc-face-rank {
+  position: absolute;
+  top: 0.1rem;
+  left: 0.3rem;
+  font-size: 1.1rem;
+}
+
+.terminal-page .tc-face-rank.flip {
+  top: auto;
+  right: 0.3rem;
+  bottom: 0.1rem;
+  left: auto;
+  transform: rotate(180deg);
+}
+
+.terminal-page .tc-pile-info {
+  display: flex;
+  flex-direction: column;
+  white-space: pre;
+}
+
+.terminal-page .tc-badge {
+  align-self: flex-start;
+  margin-top: 0.15rem;
+  padding: 0 0.5ch;
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-players {
+  display: flex;
+  flex-direction: column;
+  min-width: 12rem;
+  list-style: none;
+}
+
+.terminal-page .tc-players li {
+  display: flex;
+  justify-content: space-between;
+  gap: 2ch;
+  padding: 0 0.5ch;
+  color: var(--ph-dim);
+  white-space: pre;
+}
+
+.terminal-page .tc-players li.current {
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-players li.you:not(.current) {
+  color: var(--ph);
+}
+
+.terminal-page .tc-table-note {
+  color: var(--ph-bright);
+}
+
+.terminal-page .tc-hand-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.terminal-page .tc-hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.terminal-page .tc-screen button {
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+}
+
+.terminal-page .tc-screen button:focus-visible {
+  outline: 2px dashed var(--ph-bright);
+  outline-offset: 2px;
+}
+
+.terminal-page .tc-screen .tc-hand-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 3.4rem;
+  border: 2px solid var(--ph-dim);
+  border-radius: 5px;
+  color: var(--ph-dim);
+  line-height: 1;
+}
+
+/* Playable cards light up in inverse video, like a selected menu item. */
+.terminal-page .tc-screen .tc-hand-card.playable {
+  border-color: var(--ph);
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+  box-shadow: 0 0 10px rgba(57, 255, 122, 0.55);
+}
+
+.terminal-page .tc-screen .tc-hand-card.playable:hover {
+  border-color: var(--ph-bright);
+  background: var(--ph-bright);
+}
+
+.terminal-page .tc-screen .tc-hand-card:disabled {
+  cursor: default;
+}
+
+.terminal-page .tc-hand-actions,
+.terminal-page .tc-wild {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.8rem;
+}
+
+.terminal-page .tc-hand-actions button::before,
+.terminal-page .tc-wild button::before {
+  content: '[ ';
+}
+
+.terminal-page .tc-hand-actions button::after,
+.terminal-page .tc-wild button::after {
+  content: ' ]';
+}
+
+.terminal-page .tc-hand-actions button:hover:not(:disabled),
+.terminal-page .tc-wild button:hover,
+.terminal-page .tc-hand-actions button.on {
+  background: var(--ph);
+  color: var(--ph-bg);
+  text-shadow: none;
+}
+
+.terminal-page .tc-hand-actions button:disabled {
+  color: var(--ph-faint);
+  cursor: default;
+}
+
+/* ─── Prompt ─── */
+.terminal-page .terminal-input-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1ch;
+  padding: 0.5rem 1.1rem 0.8rem;
+  cursor: text;
+}
+
+.terminal-page .terminal-input-row .prompt {
+  flex-shrink: 0;
+  color: var(--ph-bright);
+  user-select: none;
+}
+
+.terminal-page .terminal-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 1.15em;
+  outline: none;
+  caret-color: var(--ph-bright);
+  color: var(--ph-bright);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* An empty prompt shows the classic blinking block. */
+.terminal-page .terminal-input:empty::before {
+  content: '';
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  vertical-align: -0.12em;
+  background: var(--ph);
+  box-shadow: var(--ph-glow);
+  animation: tc-blink 1.06s steps(1) infinite;
+}
+
+.terminal-page .terminal-input:focus:empty::before {
+  display: none;
+}
+
+@keyframes tc-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ─── Dock: audio, rules ─── */
+.terminal-page .tc-dock {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1.5rem 1.25rem;
+}
+
+.terminal-page .tc-circles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.terminal-page .tc-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 999px;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background-color 0.2s;
+}
+
+.terminal-page .tc-circle:hover:not(:disabled),
+.terminal-page .tc-circle[aria-expanded='true'],
+.terminal-page .tc-circle[aria-pressed='true'] {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.terminal-page .tc-circle:disabled {
+  color: rgba(255, 255, 255, 0.35);
   cursor: not-allowed;
 }
 
-.terminal-page button.primary {
-  background-color: #238636;
-  border-color: #2ea043;
-  color: #fff;
-}
-
-.terminal-page button.primary:hover {
-  background-color: #2ea043;
-}
-
-.terminal-page button.danger {
-  background-color: #da3633;
-  border-color: #f85149;
-  color: #fff;
-}
-
-.terminal-page button.danger:hover {
-  background-color: #f85149;
-}
-
-.terminal-body {
-  font-family: 'Courier New', monospace;
-  width: 100%;
-  max-width: 800px;
-  background-color: #0d1117;
-  border: 1px solid #21262d;
-  border-radius: 8px;
-  padding: 1rem;
-  min-height: 300px;
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-bottom: 0;
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.terminal-body div {
-  padding: 2px 0;
-  word-break: break-word;
-  line-height: 1.4;
-}
-
-.terminal-input-row {
+/* What's playing: a small glass pill beside the buttons. */
+.terminal-page .tc-now-playing {
   display: flex;
-  align-items: flex-start;
-  width: 100%;
-  max-width: 800px;
-  background-color: #161b22;
-  border: 1px solid #21262d;
-  border-top: none;
-  border-radius: 0 0 8px 8px;
-  padding: 0.6rem 1rem;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 15rem;
+  height: 3.5rem;
+  padding: 0 0.4rem 0 1.1rem;
+  border-radius: 999px;
+  text-align: left;
 }
 
-.terminal-input-row .prompt {
-  color: #3fb950;
-  user-select: none;
-  pointer-events: none;
-  font-family: 'Courier New', monospace;
-  line-height: 1.4;
+.terminal-page .tc-np-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.terminal-input-row .terminal-input {
-  flex-grow: 1;
-  outline: none;
-  margin-left: 4px;
-  color: #3fb950;
-  min-height: 1em;
-  font-family: 'Courier New', monospace;
-  font-size: 1rem;
-  line-height: 1.4;
+.terminal-page .tc-np-title,
+.terminal-page .tc-np-artist {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow:
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(0, 0, 0, 0.85);
 }
 
-.room-audio-player {
-  width: 100%;
-  max-width: 800px;
-  margin-top: 0.8rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
+.terminal-page .tc-np-title {
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
-.room-audio-player.visible {
-  opacity: 1;
-  pointer-events: auto;
+.terminal-page .tc-np-artist {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.72rem;
 }
 
-@media (max-width: 900px) {
-  .terminal-page {
-    padding: 1.2rem;
-  }
-
-  .terminal-page input[type="text"] {
-    width: min(100%, 480px);
-  }
-
-  .terminal-page .btn-row {
-    width: 100%;
-    max-width: 800px;
-  }
+.terminal-page .tc-np-next {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  color: #000;
+  font: 600 1.2rem/1 var(--sans);
+  cursor: pointer;
+  transition: transform 0.3s;
 }
 
-@media (max-width: 640px) {
-  .terminal-page {
-    padding: 1rem 0.75rem;
-    align-items: stretch;
+.terminal-page .tc-np-next:hover {
+  transform: scale(1.06);
+}
+
+.terminal-page .tc-np-next:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.terminal-page .tc-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.terminal-page .tc-rules {
+  position: absolute;
+  bottom: calc(100% - 0.25rem);
+  width: min(26rem, calc(100vw - 2rem));
+  padding: 1.25rem 1.5rem;
+  border-radius: 2rem;
+  text-align: left;
+}
+
+.terminal-page .tc-rules h2 {
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.terminal-page .tc-rules p {
+  margin-bottom: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.85rem;
+}
+
+.terminal-page .tc-rules dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  font-size: 0.82rem;
+}
+
+.terminal-page .tc-rules dt {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.terminal-page .tc-rules dd {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.terminal-page .room-audio-player {
+  display: none;
+  width: min(22rem, 100%);
+  height: 2.25rem;
+  margin-top: 0.75rem;
+}
+
+.terminal-page .room-audio-player.visible {
+  display: block;
+}
+
+/* ─── Smaller screens ─── */
+@media (max-width: 767px) {
+  .terminal-page .tc-nav {
+    padding: 1rem 1rem 0;
   }
 
-  .terminal-page a.back-link {
-    margin-bottom: 1rem;
-    text-align: left;
+  .terminal-page .tc-nav-pill {
+    padding-left: 1rem;
   }
 
-  .terminal-page p {
-    font-size: 0.92rem;
-  }
-
-  .terminal-page input[type="text"] {
-    width: 100%;
-    font-size: 16px;
-  }
-
-  .terminal-page .btn-row {
-    gap: 0.45rem;
-    margin-bottom: 1rem;
-  }
-
-  .terminal-page button {
-    flex: 1 1 calc(50% - 0.45rem);
-    min-height: 42px;
-    padding: 0.55rem 0.7rem;
+  .terminal-page .tc-nav-status {
+    margin-left: 0.75rem;
     font-size: 0.8rem;
   }
 
-  .terminal-body {
-    min-height: 44vh;
-    max-height: 50vh;
-    padding: 0.75rem;
+  .terminal-page .tc-hero {
+    padding: 1.25rem 1rem 0;
   }
 
-  .terminal-input-row {
-    padding: 0.55rem 0.75rem;
+  .terminal-page .tc-headline {
+    font-size: clamp(2.1rem, 10vw, 3rem);
+    white-space: normal;
   }
 
-  .terminal-input-row .terminal-input {
-    font-size: 16px;
-    min-height: 1.4em;
+  /* No room for the subline on a phone: the terminal needs the height. */
+  .terminal-page .tc-subline {
+    display: none;
+  }
+
+  .terminal-page .tc-headline {
+    margin-bottom: 1rem;
+  }
+
+  .terminal-page .tc-join {
+    flex-wrap: wrap;
+    padding: 0.5rem;
+    border-radius: 1.75rem;
+  }
+
+  .terminal-page .tc-join input {
+    flex-basis: 40%;
+    padding-left: 0.9rem;
+  }
+
+  .terminal-page .tc-join-divider {
+    margin: 0;
+  }
+
+  .terminal-page .tc-join :is(.tc-pill-white, .tc-text-btn) {
+    flex: 1;
+  }
+
+  .terminal-page .tc-window {
+    padding: 0.45rem;
+    border-radius: 1.6rem;
+  }
+
+  .terminal-page .tc-screen {
+    border-radius: 1.2rem;
+    font-size: 1.2rem;
+  }
+
+  .terminal-page .tc-key {
+    min-width: 0;
+    margin-right: 1ch;
+  }
+
+  /* On a phone the hand is one row you swipe through, so the log keeps its room. */
+  .terminal-page .tc-table {
+    gap: 0.4rem;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .terminal-page .tc-table-row {
+    gap: 0.4rem 1rem;
+  }
+
+  .terminal-page .tc-face {
+    width: 2.6rem;
+    height: 3.5rem;
+  }
+
+  .terminal-page .tc-face-suit {
+    font-size: 1.5rem;
+  }
+
+  .terminal-page .tc-players {
+    min-width: 0;
+  }
+
+  .terminal-page .tc-hand {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 2px;
+    scrollbar-width: none;
+  }
+
+  .terminal-page .tc-screen .tc-hand-card {
+    flex: none;
+    width: 2.2rem;
+    height: 2.8rem;
   }
 }
 
-@media (max-width: 420px) {
-  .terminal-page button {
-    flex-basis: 100%;
+/* Short laptop screens: compact the table so the log keeps room for a few
+   lines while a game is on. */
+@media (min-width: 768px) and (max-height: 820px) {
+  .terminal-page .tc-nav {
+    padding-top: 0.75rem;
   }
 
-  .terminal-body {
-    min-height: 40vh;
+  .terminal-page .tc-hero {
+    padding-top: 0.9rem;
   }
 
-  .room-audio-player {
-    margin-top: 0.6rem;
+  .terminal-page .tc-headline {
+    margin-bottom: 0.35rem;
+    font-size: clamp(2.2rem, 4.4vw, 3.8rem);
   }
+
+  .terminal-page .tc-subline {
+    margin-bottom: 0.75rem;
+  }
+
+  .terminal-page .tc-join {
+    margin-bottom: 0.75rem;
+  }
+
+  .terminal-page .tc-window {
+    padding: 0.45rem;
+  }
+
+  .terminal-page .tc-table {
+    gap: 0.4rem;
+    padding: 0.45rem 1.1rem;
+  }
+
+  .terminal-page .tc-face {
+    width: 2.8rem;
+    height: 3.7rem;
+  }
+
+  .terminal-page .tc-face-suit {
+    font-size: 1.6rem;
+  }
+
+  .terminal-page .tc-screen .tc-hand-card {
+    width: 2.3rem;
+    height: 2.8rem;
+  }
+
+  .terminal-page .tc-dock {
+    padding: 0.6rem 1.5rem 0.75rem;
+  }
+
+  .terminal-page .tc-circle {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .terminal-page .tc-now-playing {
+    height: 2.75rem;
+  }
+
+  .terminal-page .tc-np-next {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 760px) {
+  .terminal-page .tc-subline {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terminal-page .terminal-input:empty::before,
+  .terminal-page .tc-screen,
+  .terminal-page .tc-screen::before,
+  .terminal-page .tc-static {
+    animation: none;
+  }
+
+  .terminal-page .tc-pill-white:hover {
+    transform: none;
+  }
+
 }
